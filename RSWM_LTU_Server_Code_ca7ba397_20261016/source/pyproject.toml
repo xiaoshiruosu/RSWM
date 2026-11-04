@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rswm-inria-120"
+version = "0.4.2"
+description = "Deterministic compact remote-sensing spatial-query benchmark"
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.24,<3", "Pillow>=10,<13"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<10"]
+data = ["huggingface-hub>=0.24,<2", "tifffile>=2024.1.1"]
+motion = ["scipy>=1.10,<2"]
+features = ["torch>=2.2"]
+probes = ["pyarrow>=14"]
+isolation = []
+generate = ["torch>=2.2", "torchvision>=0.17", "diffusers>=0.33,<1", "transformers>=4.44,<5", "accelerate>=0.33", "safetensors>=0.4", "peft>=0.13", "einops>=0.7", "easydict>=1.13", "ftfy>=6.2", "regex", "tqdm", "imageio>=2.34"]
+
+[project.scripts]
+rswm-inria = "rswm_inria.cli:main"
+rswm-suite = "rswm_inria.suite:main"
+rswm-export = "rswm_inria.export_tables:main"
+rswm-materialize = "rswm_inria.hf_materialize:main"
+rswm-materialized-audit = "rswm_inria.materialized:audit_main"
+rswm-smoke12 = "rswm_inria.smoke12:main"
+rswm-motion-calibrate = "rswm_inria.motion_protocol:calibration_main"
+rswm-motion-validate = "rswm_inria.motion_protocol:validation_main"
+rswm-features = "rswm_inria.features:main"
+rswm-validate-features = "rswm_inria.features:validation_main"
+rswm-release-features = "rswm_inria.features:release_main"
+rswm-quality = "rswm_inria.quality_evaluation:main"
+rswm-quality-plan = "rswm_inria.quality_protocol:main"
+rswm-paired = "rswm_inria.paired_execution:main"
+rswm-lr64 = "rswm_inria.lr64:main"
+rswm-experiment = "rswm_inria.experiments:main"
+rswm-train = "rswm_inria.training:main"
+rswm-export-trained-adapter = "rswm_inria.legacy_export:main"
+rswm-worker = "rswm_inria.worker_client:main"
+rswm-acceptance = "rswm_inria.acceptance:main"
+rswm-server-inputs = "rswm_inria.server_inputs:main"
+rswm-feature-export = "rswm_inria.feature_export:main"
+rswm-server = "rswm_inria.server:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+rswm_inria = ["configs/frozen/*.json", "configs/examples/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

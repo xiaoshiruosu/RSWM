@@ -1,0 +1,17 @@
+{
+  "schema": "rsroll.baseline_card/v1",
+  "name": "rsroll_native_attn_cam_r16",
+  "source": "this repository",
+  "checkpoint": "external LoRA checkpoint",
+  "native_input": "single condition image plus continuous camera trajectory",
+  "native_output": "T-frame video rollout",
+  "number_of_condition_views": 1,
+  "uses_camera_pose": true,
+  "uses_future_gt": false,
+  "training_data": "AID only under the frozen official split",
+  "adaptation": "LoRA rank 16, attention+camera targets, native pose route",
+  "notes": "Primary camera-aware arm; result not bundled.",
+  "trajectory_support": "native continuous trajectory",
+  "comparison_track": "fully_comparable_single_image",
+  "main_table_eligible": true
+}

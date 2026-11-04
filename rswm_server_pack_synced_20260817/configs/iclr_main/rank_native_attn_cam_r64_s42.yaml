@@ -1,0 +1,39 @@
+# Rank sweep cell: only rank/alpha differ from the canonical seed-42 primary run.
+experiment:
+  name: iclr_rank_native_attn_cam_r64_s42
+  description: "LoRA rank sweep: native + attn_cam, rank 64"
+  role: native
+dataset:
+  train: ${RSWM_BASE}/work/rsroll_official/data/train_geo.h5
+  validation: ${RSWM_BASE}/work/rsroll_official/official_splits.json
+  tier: aid
+  pose_mode: native
+model:
+  checkpoint: ${RSWM_BASE}/models/lingbot-world-base-cam
+lora:
+  rank: 64
+  alpha: 64
+  target_modules: attn_cam
+training:
+  batch_size: 1
+  learning_rate: 0.0001
+  num_epochs: 5
+  max_steps: null
+  save_interval: 1
+  max_frames: 33
+  gradient_accumulation_steps: 4
+  seed: 42
+  split_seed: 42
+  max_train_samples: null
+  max_val_samples: null
+evaluation:
+  enabled: true
+  max_samples: 400
+  gen_seed: 42
+hardware:
+  gpu: auto
+  profile: a800_80g
+  offload: 1
+  attention_backend: auto
+  min_free_gib: 70
+  min_disk_free_gib: 50

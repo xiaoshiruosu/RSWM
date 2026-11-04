@@ -1,0 +1,29 @@
+#!/bin/bash
+#PBS -P rx40
+#PBS -q gpuhopper
+#PBS -N rswm_18_quals
+#PBS -l ncpus=12,ngpus=1,mem=128GB,jobfs=100GB,walltime=04:00:00
+#PBS -l storage=scratch/qk73+scratch/rx40
+#PBS -l wd
+#PBS -j oe
+# 每个 .pbs = 一个实验。换项目/队列/存储改上面 -P/-q/-l storage;换机器路径改 _pbs_env.sh。
+# 01-19 legacy 作业;当前流程用 qsub_corrected_rerun.sh。手动 qsub 仅用于复现旧结果。
+# [v2.9] legacy 链(02-12 用 SEM_H5=identity 中和位姿或其产物)。
+# 声明 legacy profile 保持 identity 口径复现旧数字;正式 ICLR 矩阵见 20-36。
+export RSWM_PROFILE=legacy
+_ENVF="${PBS_O_WORKDIR:-$PWD}/server_run/pbs/_pbs_env.sh"
+[ -f "$_ENVF" ] || { echo "FATAL: 找不到 $_ENVF —— 必须从包根 qsub(缺 -l wd 或提交目录不对)"; exit 1; }
+source "$_ENVF"
+
+# 定性 mp4(4 场景 × 4 样本,FRAMES=MAX_FRAMES 对齐论文)
+T_R128="$WORK/train_r128_sem"   # [v2.7.2 ②] 跟随 02 号显式目录
+[ -d "$T_R128/best_checkpoint" ] || { echo "FATAL: 缺 $T_R128/best_checkpoint(先跑 02)"; exit 1; }
+if ! done_p p5_quals; then
+    for SC in urban rural general water; do
+        LORA_CKPT="$T_R128/best_checkpoint" DATA_PATH="$SEM_H5" CHECKPOINT_DIR="$CHECKPOINT_DIR" \
+        SCENE="$SC" NUM_SAMPLES=4 FRAMES="$MAX_FRAMES" OUTDIR="$WORK/quals/$SC" \
+            bash "$NEW/run_generate_samples.sh" 2>&1 | tee "$LOGS/p5_$SC.log"
+    done
+    stamp p5_quals
+fi
+echo "[ok] 定性素材完成: $WORK/quals/"

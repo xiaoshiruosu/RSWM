@@ -1,0 +1,7 @@
+# Generated 2026-08-13 Asia/Shanghai
+# label  sha256  bytes  artifact
+# The modified archive deliberately excludes this checksum file so the archive
+# hash is stable and non-self-referential; the delivered expanded tree includes it.
+SOURCE_BASELINE  FCA092BA5F294EE7FD3DA3A485484CA4716698237BCEE8ABBA9CB20B6591E9D6  1568993  rsroll-bench-server-20260731c.tar.gz
+MODIFIED_ARCHIVE  B01DDA3F321C9568DD0025E808B334E4E718735A7F97E2551E47E42434BEE87E  1461759  rsroll-bench-iclr-20260813.tar.gz
+UNIFIED_DIFF  299D40B4AA7EF1BF2FBEE71592B23D1F642FAC4C366240706D42DF07B527BAB9  127753  rswm_iclr_20260813.patch

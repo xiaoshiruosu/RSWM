@@ -1,0 +1,78 @@
+# LoRA Fine-tuning Configuration for Wan2.2
+# Multi-Direction Sliding Window Benchmark Training
+
+# Model Configuration
+model_config: "ti2v-5B"  # Options: t2v-A14B, i2v-A14B, ti2v-5B, animate-14B, s2v-14B
+checkpoint_dir: "./Wan2.2-TI2V-5B"  # Path to pretrained model
+
+# Data Configuration
+data_path: "./multi_direction_benchmark_v2.h5"  # Path to benchmark dataset
+scene_categories: null  # null for all, or list like ["general", "urban"]
+num_workers: 0  # shared-server safe default; raise explicitly after profiling /dev/shm
+
+# Train/Validation Split
+train_ratio: 0.8  # Ratio of training samples (default: 0.8)
+val_ratio: 0.2  # Ratio of validation samples (default: 0.2)
+stratify_by: null  # Optional: stratify split by metadata key (e.g., "scene_category")
+
+# LoRA Configuration
+lora_rank: 128  # LoRA rank (r parameter)
+lora_alpha: 128  # LoRA alpha parameter
+
+# Training Hyperparameters
+batch_size: 1  # Batch size (increase if you have enough VRAM)
+num_epochs: 10  # Number of training epochs
+learning_rate: 1.0e-4  # Initial learning rate
+min_lr: 1.0e-6  # Minimum learning rate for cosine scheduler
+weight_decay: 0.01  # Weight decay for AdamW
+adam_beta1: 0.9  # Adam beta1
+adam_beta2: 0.999  # Adam beta2
+max_grad_norm: 1.0  # Maximum gradient norm for clipping (0 to disable)
+
+# Checkpointing and Logging
+output_dir: "./lora_checkpoints"  # Directory to save checkpoints
+save_interval: 1  # Save checkpoint every N epochs
+log_interval: 10  # Log metrics every N steps
+
+# Weights & Biases (optional)
+use_wandb: false  # Enable W&B logging
+wandb_project: "wan2.2-lora-finetuning"
+wandb_run_name: null  # Auto-generated if null
+
+# Device Configuration
+device_id: 0  # CUDA device ID
+seed: 42  # Random seed for reproducibility
+
+# ============================================================================
+# Recommended Configurations for Different Scenarios
+# ============================================================================
+
+# For RTX 4090 (24GB VRAM):
+# - model_config: "ti2v-5B"
+# - batch_size: 1
+# - lora_rank: 64-128
+# - Enable gradient checkpointing if needed
+
+# For A100 (80GB VRAM):
+# - model_config: "t2v-A14B" or "i2v-A14B"
+# - batch_size: 1 first; raise only after a measured smoke test
+# - lora_rank: 128-256
+
+# For Multi-GPU Training:
+# - Use torchrun or accelerate
+# - Increase batch_size proportionally
+# - Consider using FSDP for large models
+
+# ============================================================================
+# Training Tips
+# ============================================================================
+
+# 1. Start with a small learning rate (1e-4 to 1e-5)
+# 2. Monitor loss curves - should decrease steadily
+# 3. Use gradient clipping to prevent instability
+# 4. Save checkpoints frequently in case of interruption
+# 5. Validate on held-out samples periodically
+# 6. Consider using mixed precision training (fp16/bf16) to save memory
+# 7. Adjust LoRA rank based on task complexity:
+#    - Simple tasks: rank 32-64
+#    - Complex tasks: rank 128-256

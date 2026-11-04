@@ -1,0 +1,196 @@
+#!/bin/bash
+#PBS -P rx40
+#PBS -q gpuhopper
+#PBS -N rswm_01_build
+#PBS -l ncpus=12,ngpus=1,mem=128GB,jobfs=100GB,walltime=06:00:00
+#PBS -l storage=scratch/qk73+scratch/rx40
+#PBS -l wd
+#PBS -j oe
+# 每个 .pbs = 一个实验。换项目/队列/存储改上面 -P/-q/-l storage;换机器路径改 _pbs_env.sh。
+# 01-19 legacy 作业;当前流程用 qsub_corrected_rerun.sh。手动 qsub 仅用于复现旧结果。
+_ENVF="${PBS_O_WORKDIR:-$PWD}/server_run/pbs/_pbs_env.sh"
+[ -f "$_ENVF" ] || { echo "FATAL: 找不到 $_ENVF —— 必须从包根 qsub(缺 -l wd 或提交目录不对)"; exit 1; }
+source "$_ENVF"
+
+# 建 canonical 数据集: 几何版 GEO_H5(waypoint Plücker)+ 位姿中和 SEM_H5(语义通道)
+# 注: 本作业是 CPU/IO 密集(AID 处理)。[v2.7] 语义门的 CLIP 评分会自动用 GPU
+#     (有卡则快;ngpus=0 也能跑,纯 CPU 全量 500 样本约多花 15-30 分钟)。
+if ! done_p p1_build; then
+    # [v2.4.3 修 P0-2] 真正重建前清掉全部下游 stamp:旧结构里强制重建
+    # (删 p1_build.done/改 builder)后,陈旧的门/neutralize stamp 会让新 H5
+    # 免检、SEM 不同步。训练 stamp(p_tr_*/p_ev_*)若在,说明在已用过的
+    # WORK 里重建 —— 大声警告(§九:该换新 WORK,而不是原地重建)。
+    rm -f "$STAMPS"/p1_dupgate* "$STAMPS"/p1_neutralize* "$STAMPS"/p1_splitgate*
+    if ls "$STAMPS"/p_tr_* "$STAMPS"/p_ev_* >/dev/null 2>&1; then
+        echo "⚠️⚠️ 本 WORK 已有训练/评估 stamp,却在重建数据 —— 旧产物将与新数据"
+        echo "     不一致。正确做法是换全新 WORK;若明知故犯请自行清理下游。"
+    fi
+    ( cd "$ROOT" && $PY lora_remotesense/build_dataset_from_benchmark.py \
+        -o "$GEO_H5" -n "$N_MAIN" --dataset-tier "$DATASET_TIER" \
+        --temp-dir "$WORK/tmp_bench_main" ) 2>&1 | tee "$LOGS/p1_build.log"
+    stamp p1_build
+fi
+
+# =============================================================================
+# [v2.9.1 拍板] 判门探针库在这里【建一次】,供 34a/34b 共享 → 两个判门作业可以
+# 真正并行(都 afterok:01),而不是 34b 等 34a。
+#
+# 探针 = 最简单可能的方向任务的三条腿:K=1(无转弯)+ 四基本方向 + 预注册高重叠
+# [0.50,0.95)。同一批数据同时喂给:
+#   34a  drop   → 文本方向可学习性
+#   34b  native → Plücker 方向可学习性
+# 两个通路必须【分别】有正对照:只让 drop PASS 就解锁全部 native 实验,
+# 证据链不完整 —— native 主线失败时,审稿人仍可归因于 pose 表示学不会。
+# =============================================================================
+PROBE_DIR="$WORK/probe34"
+PROBE_H5="$PROBE_DIR/data/probe_geo.h5"
+if ! sha_stamp_ok "$STAMPS/p1_probe_build.sha256" "$(h5_sha "$GEO_H5")"; then
+    mkdir -p "$PROBE_DIR/data"
+    echo "[01] 建判门探针库(K=1 / 四方向 / overlap [${PROBE34_OV_LO:-0.50},${PROBE34_OV_HI:-0.95}))"
+    ( cd "$ROOT" && $PY lora_remotesense/build_dataset_from_benchmark.py \
+        -o "$PROBE_H5" -n "${PROBE_N:-20}" --dataset-tier "$DATASET_TIER" \
+        --min-segments 1 --max-segments 1 --angle-quantize 4 \
+        --min-overlap-ratio "${PROBE34_OV_LO:-0.50}" \
+        --max-overlap-ratio "${PROBE34_OV_HI:-0.95}" \
+        --temp-dir "$PROBE_DIR/tmp_bench" ) 2>&1 | tee "$LOGS/p1_probe_build.log"
+    [ -f "$PROBE_H5" ] || { echo "FATAL: 探针建库失败"; exit 1; }
+    # overlap 审计留在探针目录里 —— 判门要读它做预注册区间断言
+    cp "$PROBE_DIR/tmp_bench/overlap_audit.json" "$PROBE_DIR/" 2>/dev/null || \
+        { echo "FATAL: 探针缺 overlap_audit.json,判门无法核验高重叠"; exit 1; }
+    # [v2.9.2] sha 绑定 stamp:GEO_H5 一变(主库重建)探针必须跟着重建,
+    # 否则判门会拿旧探针去为新数据背书。布尔 stamp 做不到这一点。
+    sha_stamp "$STAMPS/p1_probe_build.sha256" "$(h5_sha "$GEO_H5")"
+fi
+PROBE_SHA=$(h5_sha "$PROBE_H5")
+
+
+# [v2.4.3 修 P0-2] 门/衍生步全部改【sha 绑定 stamp】(common.sh h5_sha/
+# sha_stamp_ok):H5 内容一变必然重跑,布尔 stamp 的陈旧旁路失效。三个构建
+# 入口(本 PBS / p1_main.sh / p0_smoke.sh)同门同机制。
+# (_pbs_env 有 set -euo pipefail:用条件列表接退出码,否则 FATAL 成死代码。)
+GEO_SHA=$(h5_sha "$GEO_H5")
+
+# --- 门 1:重复/源身份(--expect-zero) ---
+if ! sha_stamp_ok "$STAMPS/p1_dupgate.sha256" "$GEO_SHA"; then
+    _rc=0
+    $PY "$ROOT/server_run/check_benchmark_duplicates.py" \
+        --gt-h5 "$GEO_H5" --expect-zero --expect-n "$N_MAIN" \
+        -o "$WORK/duplicate_report_build.json" \
+        2>&1 | tee "$LOGS/p1_dupcheck.log" || _rc=$?
+    if [ "$_rc" -ne 0 ]; then
+        echo "FATAL: DUPLICATE GATE FAIL (exit $_rc) —— exit 5=检出重复/源身份违规,"
+        echo "       其他码=检查器自身出错;不写 sha stamp、不放行下游。"
+        echo "       看 $WORK/duplicate_report_build.json 与 $LOGS/p1_dupcheck.log。"
+        echo "       构建是确定性的:确为重复时重投只会复现,须修 builder/映射。"
+        exit "$_rc"
+    fi
+    sha_stamp "$STAMPS/p1_dupgate.sha256" "$GEO_SHA"
+fi
+
+# --- 门 1.5 [v2.7]:裁剪后语义一致性(P0 人检 2026-07-27 失败的自动化)---
+# water 样本帧里没水/urban 样本帧全是河 → prompt 语义变假监督。建库期语义门
+# 已拒绝采样,这里独立复核留证据;FAIL 即 exit 8,20-33 一个都放不进。
+if ! sha_stamp_ok "$STAMPS/p1_semgate.sha256" "$GEO_SHA"; then
+    _rc=0
+    $PY "$ROOT/server_run/check_semantic_consistency.py" \
+        --gt-h5 "$GEO_H5" -o "$WORK/semantic_report.json" \
+        2>&1 | tee "$LOGS/p1_semcheck.log" || _rc=$?
+    if [ "$_rc" -ne 0 ]; then
+        echo "FATAL: SEMANTIC GATE FAIL (exit $_rc) —— 裁剪后场景语义与声明不符。"
+        echo "       看 $WORK/semantic_report.json;不放行下游。"
+        exit "$_rc"
+    fi
+    sha_stamp "$STAMPS/p1_semgate.sha256" "$GEO_SHA"
+fi
+
+# --- 门 2 [ICLR]:source-disjoint train/val/test + 泄漏门进自动链 ---
+# 旧 precheck 是索引随机 80/20，只能复刻训练器，不能阻止同一源图跨划分。
+# official split 先按源身份并查集分组再分配 70/10/20；训练器直接读取它，
+# hidden test 永不进入 train/val。内容/源身份泄漏门把 val+test 合并为 holdout。
+if ! sha_stamp_ok "$STAMPS/p1_splitgate.sha256" "$GEO_SHA"; then
+    _rc=0
+    $PY "$ROOT/server_run/make_official_splits.py" --gt-h5 "$GEO_H5" \
+        --seed "${SPLIT_SEED:-42}" \
+        -o "$WORK/official_splits.json" \
+        --emit-trainval "$WORK/official_trainval.json" \
+        2>&1 | tee "$LOGS/p1_splitgen.log" || _rc=$?
+    if [ "$_rc" -eq 0 ]; then
+        $PY "$ROOT/server_run/check_benchmark_duplicates.py" \
+            --gt-h5 "$GEO_H5" \
+            --split "$WORK/official_splits.json" \
+            -o "$WORK/duplicate_report_split.json" \
+            2>&1 | tee "$LOGS/p1_splitcheck.log" || _rc=$?
+    fi
+    if [ "$_rc" -ne 0 ]; then
+        echo "FATAL: SPLIT LEAKAGE GATE FAIL (exit $_rc) —— train/val 存在视频/"
+        echo "       场景图/源身份任一级泄漏(或生成/检查器出错)。不放行下游。"
+        echo "       看 $WORK/duplicate_report_split.json 与 $LOGS/p1_splitcheck.log"
+        exit "$_rc"
+    fi
+    sha_stamp "$STAMPS/p1_splitgate.sha256" "$GEO_SHA"
+fi
+
+# --- neutralize(两门 PASS 之后;sha 绑定,H5 变则 SEM 必同步) ---
+if ! sha_stamp_ok "$STAMPS/p1_neutralize.sha256" "$GEO_SHA"; then
+    $PY "$ROOT/server_run/neutralize_poses.py" "$GEO_H5" "$SEM_H5"
+    sha_stamp "$STAMPS/p1_neutralize.sha256" "$GEO_SHA"
+fi
+
+# --- [v2.7.13 受控 P0 验收埋点] 抢救 attempts 登记 + 逐类重采统计报告 ---
+# (semgate_attempts.json 在 tmp_bench 里,清理前必须拷出;报告信息性不判门)
+# [v2.8.1] overlap 重采审计也必须在删 tmp 前抢救 —— 它是"主 benchmark 确实
+# enforce 了 overlap<0.10"这一 claim 的唯一证据(拒样数、换源图次数、接受样本
+# 的 overlap 分布)。此前只 cp semgate_attempts.json,随后 rm -rf 整个 tmp,
+# 正式跑完这份审计就永久没了,论文里的硬约束说法无从佐证。
+cp "$WORK/tmp_bench_main/overlap_audit.json" "$WORK/" 2>/dev/null || \
+    echo "[01][注意] 无 overlap_audit.json(enforce 关闭或旧 builder)"
+cp "$WORK/tmp_bench_main/semgate_attempts.json" "$WORK/" 2>/dev/null ||     echo "[01][注意] 无 semgate_attempts.json(关门构建或旧 builder)"
+$PY "$ROOT/server_run/semgate_build_report.py" --gt-h5 "$GEO_H5"     --attempts "$WORK/semgate_attempts.json"     -o "$WORK/semgate_build_report.json" 2>&1 | tee "$LOGS/p1_semgate_report.log" ||     echo "[01][注意] 语义门统计报告失败(不阻塞)"
+
+# --- [v2.4.4] 清中间产物(门全 PASS 后;KEEP_TMP_BENCH=1 保留) ---
+# builder 每样本写一个 .mp4 + 一份窗口分辨率 benchmark.h5 —— 对 inode 紧的
+# 项目约 500+ inode / 数 GB 纯浪费。v2.4 起 trajectory/full_scene/source_*
+# 全部持久化进最终 H5,旧的 augment 回填场景不复存在,tmp 建完即弃。
+# 只删本 WORK 自己的 tmp_bench_main,不触碰任何旧 WORK。
+# =============================================================================
+# [v2.9.2] 人工批准闸的【绑定凭据】。旧版 APPROVED_01_DATA 只是个空文件,
+# 数据重建后旧批准照样放行 —— 等于"批准过一次就永远批准"。
+# 这里落一份 approval_target.json 记录本批数据的身份;编排器要求批准文件的
+# 内容与之逐字一致才放行。
+# ⚠️ 位置很关键:必须在 semgate_attempts.json / overlap_audit.json 从 tmp_bench
+# 抢救出来【之后】、清理 tmp 之前。v2.9.2 把它放在建库紧后面,那时这些文件
+# 还不在 $WORK 里,sha_of() 全返回 None —— token 根本没绑住语义门报告和
+# overlap 审计,批准闸比文档承诺的弱得多。
+# =============================================================================
+$PY - "$WORK" "$(h5_sha "$GEO_H5")" "$PROBE_SHA" <<'PYAPP'
+import hashlib, json, sys
+from pathlib import Path
+w, geo_sha, probe_sha = Path(sys.argv[1]), sys.argv[2], sys.argv[3]
+def sha_of(p):
+    p = Path(p)
+    return hashlib.sha256(p.read_bytes()).hexdigest() if p.is_file() else None
+tgt = {
+    "geo_h5_sha256": geo_sha,
+    "probe_h5_sha256": probe_sha,
+    "official_splits_sha256": sha_of(w / "official_splits.json"),
+    "official_trainval_sha256": sha_of(w / "official_trainval.json"),
+    "semgate_attempts_sha256": sha_of(w / "semgate_attempts.json"),
+    "overlap_audit_sha256": sha_of(w / "overlap_audit.json"),
+    "probe_overlap_audit_sha256": sha_of(w / "probe34" / "overlap_audit.json"),
+    "oracle_calibration_sha256": sha_of(w / "oracle_calibration.json"),
+}
+tgt["approval_token"] = hashlib.sha256(
+    json.dumps(tgt, sort_keys=True).encode()).hexdigest()
+(w / "approval_target.json").write_text(json.dumps(tgt, indent=2))
+print(f"[01] 批准目标 → {w}/approval_target.json")
+print(f"     approval_token = {tgt['approval_token']}")
+print(f"     核完数据后:  echo {tgt['approval_token']} > {w}/APPROVED_01_DATA")
+PYAPP
+
+if [ "${KEEP_TMP_BENCH:-0}" != "1" ]; then
+    echo "[01] 清理中间目录 $WORK/tmp_bench_main(KEEP_TMP_BENCH=1 可保留)"
+    rm -rf "$WORK/tmp_bench_main" 2>/dev/null || true
+fi
+echo "[ok] build 完成(重复门+split 泄漏门 PASS): $GEO_H5 / $SEM_H5"
+echo "     预注册划分: $WORK/official_splits.json"
+echo "     official 作业通过 TRAIN_SPLIT_FILE 复用，hidden test 不进训练器。"

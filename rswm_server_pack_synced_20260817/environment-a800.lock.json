@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "verified_on": "4 x NVIDIA A800-SXM4-80GB",
+  "cpu": "Intel Xeon Platinum 8350C",
+  "cpu_threads": 128,
+  "ram": "1 TiB",
+  "driver": "535.261.03",
+  "nvidia_smi_cuda": "12.2",
+  "python": "3.10.20",
+  "packages": {
+    "torch": "2.4.0+cu121",
+    "torchvision": "0.19.0+cu121",
+    "flash-attn": "2.7.3",
+    "transformers": "4.51.3",
+    "tokenizers": "0.21.4",
+    "diffusers": "0.39.0",
+    "accelerate": "1.14.0",
+    "peft": "0.19.1",
+    "numpy": "1.26.4",
+    "huggingface-hub": "0.36.2"
+  },
+  "download_environment": {
+    "path": "/nix/rsroll_25828/envs/hf311",
+    "python": "3.11.15",
+    "huggingface-hub": "0.35.3"
+  },
+  "runtime_policy": {
+    "precision": "bf16",
+    "attention": "flash_attn_2_then_sdpa",
+    "offload_default": "auto",
+    "offload_auto_resolves_on_a800_80g": "1",
+    "smoke_offload": "1"
+  },
+  "notes": [
+    "Training and download environments are intentionally separate.",
+    "Run pip check and capture a full pip freeze on the server before headline experiments."
+  ]
+}

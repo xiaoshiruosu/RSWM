@@ -1,0 +1,36 @@
+#!/bin/bash
+#PBS -P rx40
+#PBS -q gpuhopper
+#PBS -N rswm_23_r16_geo_s42
+#PBS -l ncpus=12,ngpus=1,mem=128GB,jobfs=100GB,walltime=40:00:00
+#PBS -l storage=scratch/qk73+scratch/rx40
+#PBS -l wd
+#PBS -j oe
+# 档2 修正-prompt 重跑(2026-07-11)。先重跑 01(新 builder=修正prompt+waypoints)。
+# train+eval 融合;eval 读本作业自己的 split(SPLIT_SEED=42 确定性→各配置 split 相同)→ 全并行。
+_ENVF="${PBS_O_WORKDIR:-$PWD}/server_run/pbs/_pbs_env.sh"
+[ -f "$_ENVF" ] || { echo "FATAL: 找不到 $_ENVF"; exit 1; }
+source "$_ENVF"
+# [v2.10] 评估条数分层:headline 用 $N_EVAL_HEADLINE,消融/诊断用 $N_EVAL_ABLATION
+# (是 headline 的前缀子集,两者数字直接可比)。旧版一律 0(=全部 val=100),
+# FVD 的常规做法是 2048+,FID 在 N=100 上基本是噪声。
+# [v2.9.3] 产物角色 —— 进 run_manifest,并参与 headline 资格判定
+export RSWM_RUN_ROLE=headline_native
+# [v2.8.1 P0-2] pose_mode 必须显式声明 —— v2.8 起 train.py 有 pose_mode↔H5
+# 一致性硬门,漏设会用 common.sh 的默认 native 去配 identity_neutralized 的
+# SEM_H5,作业启动即失败。语义臂走 SEM_ARM_MODE 开关(见 _pbs_env.sh)。
+export POSE_MODE=native
+
+export SEED=42 SPLIT_SEED=42 LORA_TARGETS=all
+OUT="$WORK/train_r16_geo_s42"
+if ! done_p p_tr_r16_geo_s42; then train_lora r16_geo_s42 16 16 "$GEO_H5" "$OUT"; stamp p_tr_r16_geo_s42; fi
+if ! done_p p_ev_r16_geo_s42; then eval_lora r16_geo_s42 "$OUT/best_checkpoint" "$GEO_H5" "$OUT/train_val_split.json" "$WORK/eval_r16_geo_s42" "$N_EVAL_HEADLINE"; stamp p_ev_r16_geo_s42; fi
+# 训练+评估都成功后清理 epoch checkpoint,只留 best_checkpoint。
+# 理由: train.py 每 epoch 存 low/high adapter + training_state.pt(优化器态);11 个训练 × 5 epoch
+# 会吃掉上百 GB,而 qk73 容量紧张。此时训练已 stamp 完成,断点续训不再需要这些目录。
+# 安全: 只在本作业自己的独立 $OUT(= $WORK/train_r16_geo_s42)内删,绝不触碰旧 AID work。
+if done_p p_tr_r16_geo_s42 && done_p p_ev_r16_geo_s42; then
+    find "$OUT" -maxdepth 1 -type d -name 'checkpoint-epoch-*' -exec rm -rf {} + 2>/dev/null || true
+    echo "[cleanup] 已清理 $OUT/checkpoint-epoch-*(保留 best_checkpoint)"
+fi
+echo "[ok] r16_geo_s42 train+eval 完成"

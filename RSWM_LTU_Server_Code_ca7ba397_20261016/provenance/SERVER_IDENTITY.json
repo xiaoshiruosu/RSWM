@@ -1,0 +1,21 @@
+{
+  "schema": "rswm-ltu-local-backup-v1",
+  "packaged_on": "2026-10-16",
+  "timezone": "Asia/Shanghai",
+  "observed_server_directory": "/data/group/zhaolab/project/rswm/work/rswm-code-v0.4.2-dynstate-na",
+  "last_observed_conversation": "2026-10-09T11:34:30+08:00",
+  "git_base": "ddc1dd1868ac94cec9c3652bfec0f75f26003772",
+  "software_version": "0.4.2",
+  "runtime_python_source_fingerprint": "ca7ba3977bba0f71d1165526e1caf02ada6d67c555086e3636679ece647161ca",
+  "runtime_python_file_count": 54,
+  "exactness_scope": "All 54 rswm_inria Python source files reproduce the observed server package fingerprint. Supporting sources and configuration examples are retained local files; full remote filesystem equality is not claimed.",
+  "recovery_method": "Retained local source plus exact recorded server hotfixes, with every intermediate fingerprint matched.",
+  "direct_live_server_readback": false,
+  "model_weights_included": false,
+  "image_data_or_generated_outputs_included": false,
+  "virtual_environment_included": false,
+  "actual_server_runtime_configs_included": false,
+  "runtime_historical_build_info_omitted": true,
+  "historical_build_info_preserved_at": "source/src/rswm_inria/_build_info.json",
+  "gpu_or_remote_jobs_executed_for_packaging": false
+}

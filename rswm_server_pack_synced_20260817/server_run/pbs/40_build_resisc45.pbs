@@ -1,0 +1,167 @@
+#!/bin/bash
+#PBS -P rx40
+#PBS -q gpuhopper
+#PBS -N rswm_40_resisc45
+#PBS -l ncpus=12,ngpus=1,mem=128GB,jobfs=100GB,walltime=20:00:00
+#PBS -l storage=scratch/qk73+scratch/rx40
+#PBS -l wd
+#PBS -j oe
+# =============================================================================
+# 40_build_resisc45.pbs — 第二数据集(RESISC45)泛化实验:建库 + test-only 评估
+#
+# 定位: advisor point 5「第二数据集泛化」。**不在 RESISC45 上训练** ——
+#       只建 RESISC45 benchmark,然后拿**已训好的 AID checkpoint**去评它。
+#       这是最便宜也最站得住的设计:训练集固定为 AID,测试集换成 RESISC45,
+#       AID→RESISC45 的掉点就是泛化间隙。
+#
+# 两阶段(靠 -v PHASE 选;qsub_resisc45.sh 默认拆成两个作业并串 afterok):
+#   PHASE=build : 建 GEO_H5(waypoint Plücker)+ 中和出 SEM_H5 + 校验 + 生成 split
+#   PHASE=eval  : 用 LORA_CKPT 评 RESISC45(需 build 先完成)
+#   PHASE=all   : 两阶段一个作业跑完(默认)
+#   注: build 阶段是 CPU/IO 密集,不用 GPU(同 01_build_data.pbs:16)。想省卡:
+#       单独跑 PHASE=build 时把上面 ngpus=1 改 ngpus=0。
+#
+# 必须 -v 传入:
+#   WORK=<独立目录>       ← **绝不可指向旧 AID work**(见下方硬守卫)
+#   DATASET_TIER=resisc45
+#   LORA_CKPT=<AID 训好的 best_checkpoint>   (PHASE=eval/all 时必需)
+# 可选: CHANNEL=sem|geo (默认 sem)  N_RESISC45=200  EVAL_N_RESISC45=50
+#
+# 直接 qsub 也安全:缺 -v WORK 会被守卫挡下(否则 _pbs_env.sh:20 会把 WORK 默认成
+# 旧 AID work,建库将**覆盖** $WORK/data/train_geo.h5 —— 旧结果不可覆盖)。
+#
+# 用法: 建议用 server_run/pbs/qsub_resisc45.sh 提交(带预检+依赖打印)。
+# =============================================================================
+_ENVF="${PBS_O_WORKDIR:-$PWD}/server_run/pbs/_pbs_env.sh"
+[ -f "$_ENVF" ] || { echo "FATAL: 找不到 $_ENVF —— 必须从包根 qsub(缺 -l wd 或提交目录不对)"; exit 1; }
+source "$_ENVF"
+# [v2.9.4] 产物角色 —— 进 run_manifest,并参与 headline 资格判定
+export RSWM_RUN_ROLE=generalization
+
+PHASE="${PHASE:-all}"
+CHANNEL="${CHANNEL:-sem}"
+N_RESISC45="${N_RESISC45:-200}"
+EVAL_N_RESISC45="${EVAL_N_RESISC45:-50}"
+
+# ---- 硬守卫 1: WORK 绝不可 = 旧 AID work ----
+OLD_WORK="$ROOT/server_run/work"
+_abs() { python3 -c "import os,sys;print(os.path.realpath(sys.argv[1]))" "$1" 2>/dev/null || echo "$1"; }
+if [ "$(_abs "$WORK")" = "$(_abs "$OLD_WORK")" ]; then
+    echo "FATAL: WORK=$WORK 指向旧 AID work —— 拒绝执行。" >&2
+    echo "       建库会覆盖 $OLD_WORK/data/train_geo.h5 等旧 AID 产物(不可覆盖)。" >&2
+    echo "       请 qsub -v WORK=/scratch/rx40/\$USER/rswm_resisc45,... 指定独立目录。" >&2
+    exit 1
+fi
+
+# ---- 硬守卫 2 [v2.4.4 tier 化]: 必须是三个泛化 tier 之一,且禁 aid ----
+# (旧守卫写死 != resisc45 即 FATAL,把 patternnet/whurs19 挡在门外 ——
+#  与编排器 qsub_resisc45.sh --tier 三选支持直接矛盾。)
+case "${DATASET_TIER:-aid}" in
+    resisc45|patternnet|whurs19) ;;
+    *)
+        echo "FATAL: DATASET_TIER='${DATASET_TIER:-aid}' 不是泛化 tier —— 拒绝执行。" >&2
+        echo "       本作业专用泛化测试集;请 qsub -v DATASET_TIER=resisc45|patternnet|whurs19" >&2
+        exit 1 ;;
+esac
+
+echo "[40] WORK=$WORK  TIER=$DATASET_TIER  PHASE=$PHASE  CHANNEL=$CHANNEL"
+echo "[40] 旧 AID work(只读,不触碰): $OLD_WORK"
+
+CHK="$ROOT/server_run/check_resisc45.py"
+SPLIT="$DATA_DIR/${DATASET_TIER}_val_split.json"
+TMPB="$WORK/tmp_bench_${DATASET_TIER}"
+[ -f "$CHK" ] || { echo "FATAL: 缺 $CHK" >&2; exit 1; }
+
+# ---- 容量/inode 预检 [v2.4.4:共享 lquota 库,df 判决已废(P0-1)] ----
+source "${PBS_O_WORKDIR:-$PWD}/server_run/pbs/_quota_preflight.sh"
+preflight() { quota_preflight "$1" 60 20000 || exit 1; }
+
+# =============================================================================
+# PHASE=build
+# =============================================================================
+if [ "$PHASE" = "build" ] || [ "$PHASE" = "all" ]; then
+    preflight "$WORK"
+
+    if ! done_p "p40_${DATASET_TIER}_build"; then
+        # (1) 建库**之前**先证明源数据集能离线加载、且分组过滤有效。
+        #     v2.4 起 builder 加载失败会硬错(不再静默合成),此步仍保留:
+        #     在烧建库时长之前就把缓存/映射问题暴露掉,更便宜。
+        echo "[40] (1/6) 源数据集离线校验(tier=$DATASET_TIER,建库前必须全绿)"
+        $PY "$CHK" --tier "$DATASET_TIER" --check-offline --check-source \
+            --report "$WORK/${DATASET_TIER}_source_check.json"
+
+        # (2) 建 canonical 数据集(参数与 AID 主实验逐字一致,只换 tier)
+        echo "[40] (2/6) 建 $DATASET_TIER benchmark → $GEO_H5"
+        ( cd "$ROOT" && $PY lora_remotesense/build_dataset_from_benchmark.py \
+            -o "$GEO_H5" -n "$N_RESISC45" --dataset-tier "$DATASET_TIER" \
+            --temp-dir "$TMPB" ) 2>&1 | tee "$LOGS/p40_build.log"
+
+        # (2b) [v2.4.4] 重复/源身份门 —— 与 AID 主线同门:指纹零重复 +
+        #      source_key 零复用 + 样本数吻合。泛化 tier 走 HF label 路线,
+        #      源路径可为空(内嵌 bytes)→ --allow-missing-paths(AID 永不
+        #      豁免,该豁免只对非 AID 数据集生效)。在 stamp 块内、紧跟建库,
+        #      每次真实建库必跑,FAIL 即作业死、不产出可用数据。
+        echo "[40] (2b/6) 重复/源身份门(--expect-zero)"
+        _rc=0
+        $PY "$ROOT/server_run/check_benchmark_duplicates.py" \
+            --gt-h5 "$GEO_H5" --expect-zero --expect-n "$N_RESISC45" \
+            --allow-missing-paths \
+            -o "$WORK/duplicate_report_${DATASET_TIER}.json" \
+            2>&1 | tee "$LOGS/p40_dupcheck.log" || _rc=$?
+        [ "$_rc" -eq 0 ] || { echo "FATAL: $DATASET_TIER DUPLICATE GATE FAIL (exit $_rc)"; exit "$_rc"; }
+
+        # (3) 位姿中和 → 语义通道(门 PASS 后;与 01_build_data.pbs 同序)
+        echo "[40] (3/6) 位姿中和 → $SEM_H5"
+        $PY "$ROOT/server_run/neutralize_poses.py" "$GEO_H5" "$SEM_H5"
+
+        # (4) 结构校验 + 生成 test-only split(全量 val,按场景分层交错)
+        echo "[40] (4/6) H5 校验 + split 生成"
+        $PY "$CHK" --tier "$DATASET_TIER" --check-h5 "$GEO_H5" \
+            --make-split "$SPLIT" \
+            --check-split "$GEO_H5" "$SPLIT" \
+            --report "$WORK/${DATASET_TIER}_h5_check.json"
+
+        # (5) 清中间产物:builder 每样本写一个 .mp4 + 一份 benchmark.h5,
+        #     对 inode 紧的项目是纯浪费,H5 建完就没用了。只删本作业自己的 $TMPB。
+        echo "[40] (5/6) 清理中间目录 $TMPB"
+        rm -rf "$TMPB" 2>/dev/null || true
+
+        stamp "p40_${DATASET_TIER}_build"
+        echo "[40] (6/6) 建库+门 完成"
+    fi
+    echo "[ok] build 完成: $GEO_H5 / $SEM_H5 / $SPLIT"
+fi
+
+# =============================================================================
+# PHASE=eval — 用 AID 训好的 checkpoint 评 RESISC45(test-only,不训练)
+# =============================================================================
+if [ "$PHASE" = "eval" ] || [ "$PHASE" = "all" ]; then
+    : "${LORA_CKPT:?FATAL: PHASE=$PHASE 需要 -v LORA_CKPT=<AID 训好的 best_checkpoint>}"
+    [ -d "$LORA_CKPT" ] || { echo "FATAL: LORA_CKPT=$LORA_CKPT 不是目录" >&2; exit 1; }
+
+    case "$CHANNEL" in
+        sem) EVAL_H5="$SEM_H5" ;;   # 语义通道: identity 位姿(论文主实验 regime)
+        geo) EVAL_H5="$GEO_H5" ;;   # 几何通道: waypoint Plücker 位姿
+        *)   echo "FATAL: CHANNEL='$CHANNEL' 只能是 sem|geo" >&2; exit 1 ;;
+    esac
+    for f in "$EVAL_H5" "$SPLIT"; do
+        [ -f "$f" ] || { echo "FATAL: 缺 $f —— 先跑 PHASE=build" >&2; exit 1; }
+    done
+
+    # split 必须是**这个 H5** 生成的:AID 的 train_val_split.json 索引指向另一个 H5,
+    # 混用会被 evaluate.py:113-114 静默跳过越界索引(评估样本悄悄变少)。
+    $PY "$CHK" --check-split "$EVAL_H5" "$SPLIT"
+
+    TAG="${DATASET_TIER}_${CHANNEL}_$(basename "$(dirname "$LORA_CKPT")")"
+    EOUT="$WORK/eval_$TAG"
+    echo "[40] 评估 TAG=$TAG  ckpt=$LORA_CKPT  data=$(basename "$EVAL_H5")  n=$EVAL_N_RESISC45"
+    if ! done_p "p40_ev_$TAG"; then
+        eval_lora "$TAG" "$LORA_CKPT" "$EVAL_H5" "$SPLIT" "$EOUT" "$EVAL_N_RESISC45"
+        [ -f "$EOUT/eval_results.json" ] || {
+            echo "FATAL: $EOUT/eval_results.json 未生成,评估失败" >&2; exit 1; }
+        stamp "p40_ev_$TAG"
+    fi
+    echo "[ok] RESISC45 泛化评估完成: $EOUT/eval_results.json"
+fi
+
+echo "[ok] 40_resisc45 PHASE=$PHASE 全部完成"

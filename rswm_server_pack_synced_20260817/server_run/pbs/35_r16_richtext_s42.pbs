@@ -1,0 +1,52 @@
+#!/bin/bash
+#PBS -P rx40
+#PBS -q gpuhopper
+#PBS -N rswm_35_r16_richtext_s42
+#PBS -l ncpus=12,ngpus=1,mem=128GB,jobfs=100GB,walltime=40:00:00
+#PBS -l storage=scratch/qk73+scratch/rx40
+#PBS -l wd
+#PBS -j oe
+# =============================================================================
+# 35 · 逐段富文本臂(单 seed,r16,pose_mode=drop)
+#
+# 解决审查指出的【通道 vs 信息量混淆】:主对比里 text 臂只拿到净方向词
+# (4 词)+ 段数,pose 臂拿到完整连续折线 —— 测出来的是信息量差,不是通道差。
+# 本臂把【逐段方向】全部语言化进 prompt(信息量向 pose 臂靠拢),与 36 号
+# (同为 drop 但只给净方向短文本)只差 prompt 丰富度:
+#   35 ↔ 36  = 纯粹的文本信息量对比(通道相同)
+#   36 ↔ identity 臂 = 静止命令污染的净效应(信息量相同)
+# 这两组对照把旧稿"text-only vs text+Plücker"这一混淆拆成两个单变量问题。
+#
+# 依赖:afterok:34(可学习性判门 PASS)与 01。
+# =============================================================================
+_ENVF="${PBS_O_WORKDIR:-$PWD}/server_run/pbs/_pbs_env.sh"
+[ -f "$_ENVF" ] || { echo "FATAL: 找不到 $_ENVF"; exit 1; }
+source "$_ENVF"
+# [v2.10] 评估条数分层:消融/诊断臂用 $N_EVAL_ABLATION(headline 的前缀子集)。
+# 旧版一律 0(=全部 val=100),FVD 的常规做法是 2048+,FID 在 N=100 上基本是噪声。
+# [v2.9.3] 产物角色 —— 进 run_manifest,并参与 headline 资格判定
+export RSWM_RUN_ROLE=headline_text
+
+RICH_H5="$DATA_DIR/train_richtext.h5"
+GEO_SHA=$(h5_sha "$GEO_H5")
+
+if ! sha_stamp_ok "$STAMPS/p35_variant.sha256" "$GEO_SHA"; then
+    echo "[35] 派生逐段富文本 H5(prompt 重写,图像/轨迹/位姿不动)"
+    rm -f "$RICH_H5"
+    $PY "$ROOT/server_run/make_variant_h5.py" --mode rich_text \
+        --src "$GEO_H5" --dst "$RICH_H5" 2>&1 | tee "$LOGS/p35_variant.log"
+    [ -f "$RICH_H5" ] || { echo "FATAL: 派生失败"; exit 1; }
+    sha_stamp "$STAMPS/p35_variant.sha256" "$GEO_SHA"
+fi
+
+if ! done_p p35_train; then
+    POSE_MODE=drop train_lora r16_richtext_s42 16 16 "$RICH_H5" "$WORK/train_r16_richtext_s42"
+    stamp p35_train
+fi
+if ! done_p p35_eval; then
+    POSE_MODE=drop eval_lora r16_richtext_s42 "$WORK/train_r16_richtext_s42/best_checkpoint" \
+        "$RICH_H5" "$WORK/train_r16_richtext_s42/train_val_split.json" \
+        "$WORK/eval_r16_richtext_s42" "$N_EVAL_ABLATION"
+    stamp p35_eval
+fi
+echo "[ok] 35 逐段富文本臂完成 → $WORK/eval_r16_richtext_s42"

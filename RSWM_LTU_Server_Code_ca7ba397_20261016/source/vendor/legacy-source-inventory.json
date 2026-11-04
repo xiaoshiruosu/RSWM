@@ -1,0 +1,272 @@
+[
+  {
+    "bytes": 18419,
+    "path": "rswm_server_pack_synced_20260817/LICENSE",
+    "sha256": "925fb111ffabd3fce9059e2ff78e95863f1c29728390e92c93bf96d626406f38"
+  },
+  {
+    "bytes": 2686,
+    "path": "rswm_server_pack_synced_20260817/NOTICE",
+    "sha256": "d146b60937dd44e465073eb8fac246106cd6614d295f9f7c08c8544aab4933ff"
+  },
+  {
+    "bytes": 50425,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/backbone.py",
+    "sha256": "590a759cbcab24a21226d052c3b6f8fb18b0f294af9761e3b4814c97c6570f13"
+  },
+  {
+    "bytes": 14703,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/evaluate_baseline.py",
+    "sha256": "d3bb31a9f6428d6acfbeb6fa726ffeb156b09e733414c059b576f2d66bc7b65f"
+  },
+  {
+    "bytes": 16894,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/inference.py",
+    "sha256": "bd93176f8b02247a172fef9869eccde628c15ab912486aae66a336660cbb0c6f"
+  },
+  {
+    "bytes": 75,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/__init__.py",
+    "sha256": "5bd192341af3dabbe4d0d4ad6dfc73a26f0512c10b480337dd59ae9901d68ca7"
+  },
+  {
+    "bytes": 729,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/configs/__init__.py",
+    "sha256": "44668265e5a5844379ed83094c07d193c678cc40a8a3c453556c260490c0010a"
+  },
+  {
+    "bytes": 872,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/configs/shared_config.py",
+    "sha256": "d46af6984ffabf014ebc26c65c074b7fa2d722bb84dd5b73617425bb757fa450"
+  },
+  {
+    "bytes": 1728,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/configs/wan_i2v_A14B.py",
+    "sha256": "34e360422d0f445f5351bc1d0daba28c9577228d026778c61756d882358ea933"
+  },
+  {
+    "bytes": 0,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/distributed/__init__.py",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "bytes": 1306,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/distributed/fsdp.py",
+    "sha256": "016d0216047edc9626e6728c7bb172a6d1038e2b5555c577de10ce43a9990b45"
+  },
+  {
+    "bytes": 6759,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/distributed/sequence_parallel.py",
+    "sha256": "ab3855e8cf006ab112bedb533051ceea41fb33ac01abd0457a719628caa5cb92"
+  },
+  {
+    "bytes": 1249,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/distributed/ulysses.py",
+    "sha256": "d5f2ac64ee202b47d612cae1f4fa715c8930fb87b18c04a206ce25028e3df9a3"
+  },
+  {
+    "bytes": 1306,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/distributed/util.py",
+    "sha256": "002321d89bd5b81285b598d78eb2a0c96822dfda8fce0949b5ae931a1bc9a97a"
+  },
+  {
+    "bytes": 19278,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/image2video.py",
+    "sha256": "511fbf1928509dfbe0b8f0babaaac3ac1859e00b6a066dd93054a7ecb956edf3"
+  },
+  {
+    "bytes": 425,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/modules/__init__.py",
+    "sha256": "e5dbd0cd336fc660102945dd4a357df6d7ca5683cd3fa5070cb09f881730bacd"
+  },
+  {
+    "bytes": 114,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/modules/animate/__init__.py",
+    "sha256": "015d31db0656861fdf36c29b51b46d6f0b7de08c82aae1e334b2c249dbcb70bb"
+  },
+  {
+    "bytes": 6772,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/modules/animate/animate_utils.py",
+    "sha256": "56860788d020b5b4f52ffb2c51a95119b5e6ec7ac096357a004021e138d38865"
+  },
+  {
+    "bytes": 16777,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/modules/animate/clip.py",
+    "sha256": "b95b67bd4219f07e2d10bd4785f089d4eadaeee7fd7e4a1493cba8e54d4d65a2"
+  },
+  {
+    "bytes": 13511,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/modules/animate/face_blocks.py",
+    "sha256": "1f9df15548c8ffa3296eacad5caa8c7c111a8135e5ad2674a55090e0609e9366"
+  },
+  {
+    "bytes": 15826,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/modules/animate/model_animate.py",
+    "sha256": "664a0b01bd6d7a6be8f9e3cbc373d2c81328ad13b12ba3bcef9470c57c561056"
+  },
+  {
+    "bytes": 8024,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/modules/animate/motion_encoder.py",
+    "sha256": "22059a2050f4e1ef620229d28a14b76e489fd09ecf9abb20e81b0888a17ec93a"
+  },
+  {
+    "bytes": 4854,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/modules/animate/preprocess/UserGuider.md",
+    "sha256": "689f4adf919c587a5e131ce8ef06f98fe8e7992da58fb2736db81981dbd9a8c3"
+  },
+  {
+    "bytes": 95,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/modules/animate/preprocess/__init__.py",
+    "sha256": "23a057d57223eef2859033bc042254e1e75ab3b56fa644a9d3f424e207bec5cb"
+  },
+  {
+    "bytes": 44156,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/modules/animate/preprocess/human_visualization.py",
+    "sha256": "0f9032cb4cf0f5f744ee0c014177cfc78b800220f5f95db7599a11a14df479a0"
+  },
+  {
+    "bytes": 17569,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/modules/animate/preprocess/pose2d.py",
+    "sha256": "94a3370701375f3c93fc5788418b2a0cea45cc779c2dcb5b85086ecf8f5ebf90"
+  },
+  {
+    "bytes": 41693,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/modules/animate/preprocess/pose2d_utils.py",
+    "sha256": "2720a191721ea2a0e61d0a28087d244d18bda3760efdfd4f62a54532a0de264f"
+  },
+  {
+    "bytes": 4551,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/modules/animate/preprocess/preprocess_data.py",
+    "sha256": "a8a3065c386c565b05c83c167f3fc3b45ec22bb9f401c2199fdf352967d73720"
+  },
+  {
+    "bytes": 17767,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/modules/animate/preprocess/process_pipepline.py",
+    "sha256": "bd2b26de901a053157e46c17d8bc25a0918707c4efbe968a9ace137e522218f6"
+  },
+  {
+    "bytes": 36819,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/modules/animate/preprocess/retarget_pose.py",
+    "sha256": "56cd3416414b6ec002b27cbfada3b1c5ee4b35b32b145cf65de810d9ac15973c"
+  },
+  {
+    "bytes": 5916,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/modules/animate/preprocess/sam_utils.py",
+    "sha256": "97d389115290a10ed30ed53fbacec8c33ea0719a1bc9f7e354b65c680294311c"
+  },
+  {
+    "bytes": 7191,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/modules/animate/preprocess/utils.py",
+    "sha256": "68b21f752fb2236c4d14f247eb25af8b3b164f83682eb48aecc6629ad77e68f4"
+  },
+  {
+    "bytes": 8314,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/modules/animate/preprocess/video_predictor.py",
+    "sha256": "c8f8857d1dbf0025a8b4260c164ed3fd8ddae5a58369e625c7fa9ee351973659"
+  },
+  {
+    "bytes": 4792,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/modules/animate/xlm_roberta.py",
+    "sha256": "74f4e53c7f2ca46f64420edc4b5096a7d2e1971d89163eab5f392be7f29de4d2"
+  },
+  {
+    "bytes": 10198,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/modules/attention.py",
+    "sha256": "04a44d3247e18c7925f26079751d2b8b377a882e18b7233ae80ac2ae3a35b0a5"
+  },
+  {
+    "bytes": 21919,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/modules/model.py",
+    "sha256": "5c43e4496cf2e966bbb0ff82abee2d89f29d7717de166d4d22bedaa113c71d35"
+  },
+  {
+    "bytes": 120,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/modules/s2v/__init__.py",
+    "sha256": "bde1d3a8565d9a39f0365954d9a70731a4afefae2732ac9dde155e8b8120e971"
+  },
+  {
+    "bytes": 7226,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/modules/s2v/audio_encoder.py",
+    "sha256": "905a37f3df8fe8a98f0ef249a413a8e9d4003c64174c26b8bcd944240e312520"
+  },
+  {
+    "bytes": 3471,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/modules/s2v/audio_utils.py",
+    "sha256": "82bc02dd8ba9095b733966c296c4e9e3d21e8bfbbfa5c024aa8209542637feda"
+  },
+  {
+    "bytes": 9230,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/modules/s2v/auxi_blocks.py",
+    "sha256": "28658c92dc943c3363dec8c072792c8260a1d60f3146234ca5dea6fb9ea42f9a"
+  },
+  {
+    "bytes": 34438,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/modules/s2v/model_s2v.py",
+    "sha256": "bf1668ea7bd01412942ae589cbe9d6d4a40f2fee833e9d6bbebbdeda2eeff2ef"
+  },
+  {
+    "bytes": 28335,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/modules/s2v/motioner.py",
+    "sha256": "ae1ea45c56a7f7f792e0c55a36be1bc2a2b2336c874199003dcd307654e2f7de"
+  },
+  {
+    "bytes": 3066,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/modules/s2v/s2v_utils.py",
+    "sha256": "fd6edd576d499baad9315541e25161339c580bdf6940ca53cace7dfc62701cc1"
+  },
+  {
+    "bytes": 17139,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/modules/t5.py",
+    "sha256": "2825391e2152a3e0547aac38bacd1cfdf2975ec79c6806e748edb30feed79b3c"
+  },
+  {
+    "bytes": 2358,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/modules/tokenizers.py",
+    "sha256": "c6f8eb124058a26182bd22fc48484384aba67d299a07241cb2ef2bb3065f953a"
+  },
+  {
+    "bytes": 23029,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/modules/vae2_1.py",
+    "sha256": "7b8134a4b6497aea0f2c0ca492c3550b6a1cecc1a23d63c421c876ef8d976a2f"
+  },
+  {
+    "bytes": 31773,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/modules/vae2_2.py",
+    "sha256": "985a43d76863bddeda454c6818c9370458bca3b3c79272dce89954bd46661a55"
+  },
+  {
+    "bytes": 527,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/utils/__init__.py",
+    "sha256": "046308907139c69026bcd2699038c62abb5dd04e9bc57ca6b6ad15250b1a6da7"
+  },
+  {
+    "bytes": 5114,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/utils/cam_utils.py",
+    "sha256": "27d4801792316322e09711b31cdde595940ab2504e5580a0cf290b72c9789951"
+  },
+  {
+    "bytes": 40070,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/utils/fm_solvers.py",
+    "sha256": "37350e31d43ab391520944354e0130a7637f603ec80948f5acd38d21ff7bc1d3"
+  },
+  {
+    "bytes": 32486,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/utils/fm_solvers_unipc.py",
+    "sha256": "02875335c988bb2d7d985ad3034176909d1ba03d428a5a3b61f2d101dac3e0aa"
+  },
+  {
+    "bytes": 12988,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/utils/qwen_vl_utils.py",
+    "sha256": "e4ad56af72c42e0da445891565d66b25836881acc7f21d1e63bb2cf1f346f6af"
+  },
+  {
+    "bytes": 20062,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/utils/system_prompt.py",
+    "sha256": "3fe103dc2db1967bc59f511e1ec1880b915ba4b59599f8378ee67be77f7616a4"
+  },
+  {
+    "bytes": 7469,
+    "path": "rswm_server_pack_synced_20260817/lora_remotesense/new/wan/utils/utils.py",
+    "sha256": "31399f1b23e77559e0a64755c12a208270b8e1dac51d3d941a05d7a3c70e8123"
+  }
+]

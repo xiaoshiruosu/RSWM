@@ -1,0 +1,28 @@
+#!/bin/bash
+#PBS -P rx40
+#PBS -q gpuhopper
+#PBS -N rswm_10_eval_r64
+#PBS -l ncpus=12,ngpus=1,mem=128GB,jobfs=100GB,walltime=06:00:00
+#PBS -l storage=scratch/qk73+scratch/rx40
+#PBS -l wd
+#PBS -j oe
+# 每个 .pbs = 一个实验。换项目/队列/存储改上面 -P/-q/-l storage;换机器路径改 _pbs_env.sh。
+# 01-19 legacy 作业;当前流程用 qsub_corrected_rerun.sh。手动 qsub 仅用于复现旧结果。
+# [v2.9] 本作业属【已退役的 legacy 链】(SEM_H5 = identity 中和位姿)。
+# 声明 legacy profile 保持 SEM_ARM_MODE=identity 以复现旧数字;
+# 正式 ICLR 矩阵是 20-33/35/36 的 official profile(drop 主线),见 common.sh。
+export RSWM_PROFILE=legacy
+_ENVF="${PBS_O_WORKDIR:-$PWD}/server_run/pbs/_pbs_env.sh"
+[ -f "$_ENVF" ] || { echo "FATAL: 找不到 $_ENVF —— 必须从包根 qsub(缺 -l wd 或提交目录不对)"; exit 1; }
+source "$_ENVF"
+# [v2.9.4] 产物角色 —— 进 run_manifest,并参与 headline 资格判定
+export RSWM_RUN_ROLE=legacy
+
+# Rank 消融评估 r64@$EVAL_N_ABL(baseline 复用 03_eval_base)
+TDIR="$WORK/train_r64_sem"
+[ -d "$TDIR/best_checkpoint" ] || { echo "FATAL: 缺 $TDIR/best_checkpoint(先跑对应的 train_r64 作业)"; exit 1; }
+if ! done_p p2_eval_r64; then
+    eval_lora "r64_sem" "$TDIR/best_checkpoint" "$SEM_H5" "$TDIR/train_val_split.json" "$WORK/eval_r64_sem" "$EVAL_N_ABL"
+    stamp p2_eval_r64
+fi
+echo "[ok] r64_sem 评估完成"

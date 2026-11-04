@@ -1,0 +1,18 @@
+{
+  "schema": "rsroll.baseline_card/v1",
+  "name": "deterministic_translation",
+  "source": "local construction-aware diagnostic",
+  "checkpoint": null,
+  "native_input": "privileged full scene and benchmark waypoints",
+  "native_output": "T-frame crop rollout",
+  "number_of_condition_views": 1,
+  "uses_camera_pose": true,
+  "uses_future_gt": false,
+  "training_data": "none",
+  "adaptation": "oracle-like crop lookup from full static scene",
+  "notes": "Upper-bound proxy using information unavailable to a deployable single-image model.",
+  "trajectory_support": "privileged benchmark trajectory",
+  "comparison_track": "diagnostic_upper_bound",
+  "main_table_eligible": false,
+  "privileged_information": ["full_scene", "benchmark_waypoints"]
+}

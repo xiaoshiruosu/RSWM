@@ -1,0 +1,18 @@
+{
+  "schema": "rsroll.baseline_card/v1",
+  "name": "random_direction_translation",
+  "source": "local wrong-direction diagnostic",
+  "checkpoint": null,
+  "native_input": "privileged full scene and benchmark trajectory magnitude",
+  "native_output": "T-frame crop rollout in deliberately incorrect direction",
+  "number_of_condition_views": 1,
+  "uses_camera_pose": true,
+  "uses_future_gt": false,
+  "training_data": "none",
+  "adaptation": "diagnostic crop translation",
+  "notes": "Tests whether trajectory metrics detect sharp but incorrectly directed motion.",
+  "trajectory_support": "deliberately wrong",
+  "comparison_track": "diagnostic_only",
+  "main_table_eligible": false,
+  "privileged_information": ["full_scene", "benchmark_waypoints"]
+}

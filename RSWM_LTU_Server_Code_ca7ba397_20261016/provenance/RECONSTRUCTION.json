@@ -1,0 +1,87 @@
+{
+  "schema": "rswm-ltu-server-code-recovery-v1",
+  "packaged_on": "2026-10-16",
+  "timezone": "Asia/Shanghai",
+  "base_source_root": "D:/Users/25828/Documents/ChatGPT/lora 2/work/rswm_ddc_continuation/source/rswm_inria_120-0.2.0",
+  "server_root": "/data/group/zhaolab/project/rswm",
+  "observed_server_code_path": "/data/group/zhaolab/project/rswm/work/rswm-code-v0.4.2-dynstate-na",
+  "expected_python_source_fingerprint": "ca7ba3977bba0f71d1165526e1caf02ada6d67c555086e3636679ece647161ca",
+  "identity_algorithm": "sha256(utf8(json.dumps({relative_posix_py_path:sha256(raw_file_bytes)},sort_keys=True,separators=(\",\",\":\"),ensure_ascii=False)))",
+  "python_file_count": 54,
+  "stages": [
+    {
+      "stage": "local-source-before-recovery",
+      "fingerprint": "917a7d4bd0f5dd6ce2df2a44458b136d5786bd50d41871a1f3eae78d06d43fa9"
+    },
+    {
+      "stage": "server-suite-label-fix",
+      "fingerprint": "f73597e1d212231ea7824b2f8562e380350c476587bf462c41e5efee82ee5680",
+      "expected": "f73597e1d212231ea7824b2f8562e380350c476587bf462c41e5efee82ee5680"
+    },
+    {
+      "stage": "server-diskretry",
+      "fingerprint": "ec4495784313d2bad3aeefac1626d3ce8118e799044dbe819f388428b9e2139f",
+      "expected": "ec4495784313d2bad3aeefac1626d3ce8118e799044dbe819f388428b9e2139f"
+    },
+    {
+      "stage": "server-dynstate-na",
+      "fingerprint": "ca7ba3977bba0f71d1165526e1caf02ada6d67c555086e3636679ece647161ca",
+      "expected": "ca7ba3977bba0f71d1165526e1caf02ada6d67c555086e3636679ece647161ca"
+    }
+  ],
+  "patches": [
+    {
+      "stage": "server-suite-label-fix",
+      "path": "src/rswm_inria/suite.py",
+      "operation": "remove-local-only-comment-block",
+      "old": "        # Frozen task files conventionally live in private/tasks while their\n        # label arrays live in private/labels and are referenced as\n        # ../labels/*.npz. Permit that contained parent step, but keep the\n        # resolved path inside the private build root and reject traversal\n        # beyond it.\n",
+      "new": "",
+      "record_archive": "rollout-2026-10-02T01-45-36-01a0f892-5b6c-79f1-8f1f-2ca16330fce7.jsonl.zst",
+      "record_row": 10299,
+      "server_confirmation_row": 10335
+    },
+    {
+      "stage": "server-diskretry",
+      "path": "src/rswm_inria/resources.py",
+      "operation": "insert-time-import-if-absent-and-exact-literal-replacement",
+      "import_old": "import threading\n",
+      "import_new": "import threading\nimport time\n",
+      "old": "        if root is not None:\n            self._register(\"disk_bytes\")\n            try:\n                if not Path(root).is_dir():\n                    raise FileNotFoundError(\"Attempt resource directory is absent\")\n                size = sum(p.stat().st_size for p in Path(root).rglob(\"*\") if p.is_file() and not p.is_symlink())\n                self._sample(\"disk_bytes\", size)\n            except Exception as exc:\n                self._sample(\"disk_bytes\", reason=\"DISK_INVENTORY_FAILED\")\n                self.unavailable[\"disk_bytes\"] = type(exc).__name__\n",
+      "new": "        if root is not None:\n            self._register(\"disk_bytes\")\n            try:\n                size = None\n                last_error = None\n\n                for retry_index in range(3):\n                    try:\n                        if not Path(root).is_dir():\n                            raise FileNotFoundError(\n                                \"Attempt resource directory is absent\"\n                            )\n\n                        size = sum(\n                            p.stat().st_size\n                            for p in Path(root).rglob(\"*\")\n                            if p.is_file() and not p.is_symlink()\n                        )\n                        break\n\n                    except FileNotFoundError as exc:\n                        last_error = exc\n                        if retry_index < 2:\n                            time.sleep(0.2 * (retry_index + 1))\n\n                if size is None:\n                    raise last_error\n\n                self._sample(\"disk_bytes\", size)\n\n            except Exception as exc:\n                self._sample(\n                    \"disk_bytes\",\n                    reason=\"DISK_INVENTORY_FAILED\",\n                )\n                self.unavailable[\"disk_bytes\"] = type(exc).__name__\n",
+      "record_archive": "rollout-2026-10-04T17-48-46-01a0f892-5b6c-79f1-8f1f-2ca16330fce7_01a10650-e19c-7fe0-8777-4a1db6172e9c.jsonl.zst",
+      "record_row": 816
+    },
+    {
+      "stage": "server-dynstate-na",
+      "path": "src/rswm_inria/resources.py",
+      "operation": "exact-literal-replacement",
+      "old": "            else:\n                self._sample(\"dynamic_state_bytes\", reason=\"STATE_STORAGE_INCOMPLETE\")\n                # A supported partial peak is evidence, never a full-state peak.\n                current = self.measurements[\"dynamic_state_bytes\"][\"observed_peak\"]\n                self.measurements[\"dynamic_state_bytes\"][\"observed_peak\"] = max(current or 0, measured[\"unique_supported_storage_bytes\"])\n                for reason in measured[\"reason_codes\"]:\n                    _reason(self.measurements[\"dynamic_state_bytes\"], reason)\n                self.unavailable[\"dynamic_state_bytes\"] = \"Unsupported explicit state storage\"\n",
+      "new": "            else:\n                unsupported = set(\n                    measured.get(\"unsupported_types\", [])\n                )\n\n                torch_internal_state = (\n                    bool(unsupported)\n                    and unsupported <= {\n                        \"Tensor\",\n                        \"device\",\n                        \"dtype\",\n                    }\n                )\n\n                if torch_internal_state:\n                    measurement = self.measurements[\n                        \"dynamic_state_bytes\"\n                    ]\n                    measurement[\"applicability\"] = (\n                        \"not_applicable\"\n                    )\n                    measurement[\"complete\"] = True\n                    measurement[\"eligible_units\"] = 0\n                    measurement[\"measured_units\"] = 0\n                    measurement[\"observed_peak\"] = None\n                    _reason(\n                        measurement,\n                        \"STATE_CONTRACT_NOT_BYTE_ACCOUNTABLE\",\n                    )\n                    self.unavailable[\n                        \"dynamic_state_bytes\"\n                    ] = (\n                        \"Backend state has no supported \"\n                        \"byte-level accounting contract\"\n                    )\n                    return\n\n                self._sample(\n                    \"dynamic_state_bytes\",\n                    reason=\"STATE_STORAGE_INCOMPLETE\",\n                )\n                # A supported partial peak is evidence, never a full-state peak.\n                current = self.measurements[\n                    \"dynamic_state_bytes\"\n                ][\"observed_peak\"]\n                self.measurements[\n                    \"dynamic_state_bytes\"\n                ][\"observed_peak\"] = max(\n                    current or 0,\n                    measured[\n                        \"unique_supported_storage_bytes\"\n                    ],\n                )\n                for reason in measured[\"reason_codes\"]:\n                    _reason(\n                        self.measurements[\n                            \"dynamic_state_bytes\"\n                        ],\n                        reason,\n                    )\n                self.unavailable[\n                    \"dynamic_state_bytes\"\n                ] = \"Unsupported explicit state storage\"\n",
+      "record_archive": "rollout-2026-10-04T17-48-46-01a0f892-5b6c-79f1-8f1f-2ca16330fce7_01a10650-e19c-7fe0-8777-4a1db6172e9c.jsonl.zst",
+      "record_row": 2076,
+      "confirmation_row": 2097
+    }
+  ],
+  "support_file_scope": "Retained local scripts/tests/docs/vendor files. Their equality to all server-side non-package files is not attested by the package Python fingerprint.",
+  "motion24_helper": {
+    "source": "scripts/prepare_motion_metric24.py",
+    "observed_server_path": "/data/group/zhaolab/project/rswm/work/motion24-helper-3ec82/prepare_motion_metric24.py",
+    "inventory_file_sha256": "3ec82f07e387eda4fc8af253aff40f7889100c8f06fe68d29f99773b692eacea",
+    "identity_scope": "Reconstructed from the shipped helper and recorded command. No independent final remote helper checksum was supplied.",
+    "base_archive": "D:\\Users\\25828\\Documents\\ChatGPT\\lora 2\\outputs\\RSWM_Server_Code_v0.4.2_20261003.zip",
+    "base_file_sha256": "763189651e91506828c8387dda4b0a0dff7eefec8ad9c8c065a7c1e65b1c8a69",
+    "recovered_file_sha256": "3a3e72509a4939f6f4599b7d37389e417b119616256555ac829e588e74651acd",
+    "retained_local_helper_sha256": "29cc68b2016a8a7375075911758346ee37479d942962031b8ffeef7243a8ed97",
+    "operation": "Replace the single inventory SHA literal in the helper from the shipped server package, as recorded in the LTU command."
+  },
+  "server_live_readback": false,
+  "excluded": [
+    "model weights",
+    "original images",
+    "generated outputs",
+    "virtual environments",
+    "caches",
+    "full private conversation archives"
+  ],
+  "remote_jobs_launched": false
+}

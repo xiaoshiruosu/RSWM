@@ -1,0 +1,18 @@
+{
+  "schema": "rsroll.baseline_card/v1",
+  "name": "mvsplat360",
+  "source": "https://github.com/donydchen/mvsplat360",
+  "checkpoint": "re10k.ckpt, dl3dv_480p.ckpt, svd.safetensors; absent locally",
+  "native_input": "multiple context views with camera poses",
+  "native_output": "novel-view video",
+  "number_of_condition_views": 5,
+  "uses_camera_pose": true,
+  "uses_future_gt": false,
+  "training_data": "upstream model training data",
+  "adaptation": "existing RS-Roll output bridge",
+  "notes": "Unequal input contract; keep in a separate multi-view track or capability table.",
+  "trajectory_support": "native camera path with multiple contexts",
+  "comparison_track": "multi_view_separate",
+  "main_table_eligible": false,
+  "runtime_status": "NOT GPU VERIFIED"
+}

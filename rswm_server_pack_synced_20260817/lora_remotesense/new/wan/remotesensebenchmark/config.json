@@ -1,0 +1,11 @@
+{
+"Providers": [{
+"name": "zai",
+"api_base_url": "https://open.bigmodel.cn/api/coding/paas/v4/chat/completions",
+"api_key": "918be6bce2f84d49ab55eed2bfb0b7b5.dWFVyNIk0DtWfiNC",
+"models": ["glm-4.6"]
+}],
+"Router": {
+"think": "zai,glm-4.6"
+}
+}

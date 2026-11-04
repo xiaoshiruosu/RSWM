@@ -1,0 +1,18 @@
+{
+  "schema": "rsroll.baseline_card/v1",
+  "name": "rswise_recursive_bridge",
+  "source": "https://arxiv.org/abs/2509.17808",
+  "checkpoint": "external; must be recorded by producer metadata",
+  "native_input": "condition image and discrete direction instruction",
+  "native_output": "single neighboring image",
+  "number_of_condition_views": 1,
+  "uses_camera_pose": false,
+  "uses_future_gt": false,
+  "training_data": "external; must be recorded by producer metadata",
+  "adaptation": "RS-Roll recursive/per-waypoint image-to-rollout bridge",
+  "notes": "Bridge code is implemented, but no native RSWISE/RemoteBAGEL implementation, checkpoint, or result is bundled. A full T-frame producer output is mandatory.",
+  "trajectory_support": "adapted trajectory; not native",
+  "comparison_track": "adapted_image_extrapolation",
+  "main_table_eligible": true,
+  "runtime_status": "CONFIGURED / NOT RUN"
+}

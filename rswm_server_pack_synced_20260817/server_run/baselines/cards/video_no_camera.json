@@ -1,0 +1,18 @@
+{
+  "schema": "rsroll.baseline_card/v1",
+  "name": "video_no_camera",
+  "source": "local Wan/LingBot I2V backbone",
+  "checkpoint": "external matched no-camera experiment checkpoint",
+  "native_input": "single condition image; continuous camera condition disabled",
+  "native_output": "T-frame video rollout",
+  "number_of_condition_views": 1,
+  "uses_camera_pose": false,
+  "uses_future_gt": false,
+  "training_data": "must match the corresponding camera-conditioned run",
+  "adaptation": "matched LoRA training with camera/Plucker route disabled",
+  "notes": "Hold LoRA targets, data, steps, batch, evaluation set and seeds fixed against the camera-conditioned arm.",
+  "trajectory_support": "ignored except any text-direction cue",
+  "comparison_track": "fully_comparable_single_image",
+  "main_table_eligible": true,
+  "runtime_status": "CONFIGURED / NOT TRAINED"
+}

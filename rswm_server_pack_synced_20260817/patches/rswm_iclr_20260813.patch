@@ -1,0 +1,2597 @@
+diff --git "a/modified\\rswm_server_pack/README_ICLR_MODIFICATIONS.md" "b/modified\\rswm_server_pack/README_ICLR_MODIFICATIONS.md"
+new file mode 100644
+index 0000000..e820a7e
+--- /dev/null
++++ "b/modified\\rswm_server_pack/README_ICLR_MODIFICATIONS.md"
+@@ -0,0 +1,102 @@
++# ICLR benchmark 化改造（2026-08-13）
++
++## 结论与任务边界
++
++本版本保留现有 Wan/LingBot I2V Video DiT 主干，不把任务改写成真实时间预测。
++正式任务定义是：
++
++> Continuous Trajectory-conditioned Remote Sensing Video Rollout：给定单帧遥感
++> 观测与连续相机轨迹，生成未观测空间区域的连续视频 rollout。
++
++因此本文可以讨论连续轨迹控制、低条件重叠与长程误差累积；不能把 AID 合成滑窗
++视频称为 future Earth dynamics，也不能仅凭 video diffusion 主干声称模型具有显式
++3D geometry awareness。
++
++## 已完成的 P0 修复
++
++1. `MAX_TRAIN_SAMPLES` 已从 `common.sh` 透传到 `train.py`，按预注册划分后的
++   固定前缀确定性截断，并写入 split、checkpoint config 与 run manifest。
++2. 训练支持 `--split_file` / `TRAIN_SPLIT_FILE`。official 链由
++   `make_official_splits.py` 生成 source-disjoint 70/10/20 三路划分，训练器只读取
++   train/val，hidden test 不进入 DataLoader。
++3. official 主通路默认 `prompt_schema=net_continuous` 与
++   `path_estimator=registration`；缺失或被改为 legacy 口径时 fail-closed，不能进入
++   headline。
++4. manifest v3.2 记录 dataset tier、train/split seed、rank/alpha/targets、训练样本
++   上限、epoch、batch、梯度累积、学习率以及 prompt/path 口径；续训或复用时任一身份
++   不同均拒绝。
++5. 官方评分器和标准 I3D-FVD 重算都从 `t=1` 开始，只评预测帧。FID 使用全部预测帧，
++   不再只抽中间帧；FID/FVD 的样本级计算统一执行 `N>=32` 门。
++
++## ICLR 实验协议
++
++机器可读真源是 `server_run/iclr_experiment_matrix.json`，用下面的 CPU 命令校验并
++物化计划（不会启动训练）：
++
++```bash
++python server_run/iclr_matrix.py --check-only
++python server_run/iclr_matrix.py -o /path/to/work/iclr_execution_plan.json
++```
++
++计划包含：
++
++- rank sweep：`r=4/8/16/32/64`，`alpha=rank`；
++- target ablation：`attn_only / attn_cam / all`；
++- primary 配方三个训练种子 `42/43/44`；
++- Frozen backbone baseline；
++- Full FT 占位明确标成 `not_implemented/runnable=false`。
++
++Full FT 没有被伪装成已实现：当前是两份 14B 专家，现有 8-bit LoRA optimizer 与
++inactive-model CPU swap 不是公平、可验证的全参训练方案。若要把 Full FT 放主表，需先
++实现并验证独立的 FSDP/ZeRO 配方、优化器状态、峰值显存与收敛性。
++
++## Overlap 与 horizon 的正确口径
++
++论文中的 80/50/30/10/5% 定义为：
++
++```text
++overlap(condition frame t=0, predicted frame t)
++```
++
++而不是相邻两帧的 overlap。相邻帧保持高 overlap 是连续视频的必要条件；要求每个
++相邻 step 只有 5% overlap 会把视频变成不连续图像跳跃。工具会把相邻 step overlap
++作为独立 continuity audit 报告，绝不与主自变量混用。
++
++已有评估输出上运行：
++
++```bash
++python server_run/evaluate_rollout_protocol.py \
++  --gt-h5 "$WORK/data/train_geo.h5" \
++  --eval-dir "$WORK/eval_r16_geo_s42" \
++  --split-file "$WORK/train_r16_geo_s42/train_val_split.json" \
++  -o "$WORK/eval_r16_geo_s42/rollout_protocol_results.json"
++```
++
++输出包含：
++
++- 80/50/30/10/5% 条件重叠分箱的 future-frame-only SSIM/PSNR；
++- `t=1..32` 的逐帧曲线；
++- 17/25/33 帧 prefix 与 exact-length cohort；
++- 相邻 step overlap 审计；
++- 生成与 GT 的 2D 光流方向/幅度一致性 proxy。
++
++该工具故意不在 frame bin 内算 FID/FVD：同一视频内的相关帧不能冒充独立样本来放大
++N。样本级 FID/FVD 用官方评分器与 `recompute_fvd_i3d.py`。
++
++## 正式集群入口
++
++仍使用 `server_run/pbs/qsub_corrected_rerun.sh`。`01_build_data.pbs` 现在生成
++`$WORK/official_splits.json`，后续 official 训练通过 `TRAIN_SPLIT_FILE` 自动复用。
++rank/target 矩阵的未覆盖作业可依据 `iclr_execution_plan.json` 新建独立 PBS；在未真跑
++前，不得把配置文件当成实验结果。
++
++跨域表限定为 AID 训练权重在 WHU-RS19 / RESISC45 上 test-only 评估。先运行已有
++近重复/跨库重复门，再用 `generalization_gap_report.py` 汇总；目标域重新训练的结果不应
++混入“cross-domain generalization”主表。
++
++## 验证与限制
++
++已运行的 CPU 回归见 `reports/test_report.md`。本地没有 56GB 基模与匹配的 GPU 运行
++条件，因此以下项目明确未执行：真实模型初始化、LoRA 真注入参数计数、1-batch forward、
++长时训练、真实 I3D 权重前向与任何论文数值。已有 mock/假提取器测试只能验证参数转发、
++形状、契约与统计管线，不能替代服务器 smoke run。
+diff --git "a/modified\\rswm_server_pack/README_MODIFICATIONS.md" "b/modified\\rswm_server_pack/README_MODIFICATIONS.md"
+new file mode 100644
+index 0000000..3b9587f
+--- /dev/null
++++ "b/modified\\rswm_server_pack/README_MODIFICATIONS.md"
+@@ -0,0 +1,58 @@
++# RSWM P0 + ICLR benchmark 改造交付说明
++
++本目录是只读基线 `rsroll-bench-server-20260731c.tar.gz` 的独立修改版。原始归档
++SHA-256 为：
++
++```text
++FCA092BA5F294EE7FD3DA3A485484CA4716698237BCEE8ABBA9CB20B6591E9D6
++```
++
++本次保留 Wan/LingBot I2V Video DiT 主干，将任务严格定义为 **Continuous
++Trajectory-conditioned Remote Sensing Video Rollout**（静态场景的空间相机 rollout），
++不把 AID 合成序列描述成真实未来地球动力学。
++
++## 从这里开始
++
++1. 阅读 `reports/code_audit.md` 和 `reports/version_verification.md` 了解基线与架构。
++2. 阅读 `README_ICLR_MODIFICATIONS.md` 和 `docs/ICLR_EXPERIMENT_PROTOCOL.md` 了解正式协议。
++3. 用 CPU 校验机器可读实验矩阵：
++
++   ```bash
++   python server_run/iclr_matrix.py --check-only
++   ```
++
++4. Linux/PBS 集群正式入口仍是：
++
++   ```bash
++   bash server_run/pbs/qsub_corrected_rerun.sh
++   ```
++
++5. 已有推理结果可追加 overlap/horizon/future-only 分析：
++
++   ```bash
++   python server_run/evaluate_rollout_protocol.py \
++     --gt-h5 "$WORK/data/train_geo.h5" \
++     --eval-dir "$WORK/eval_r16_geo_s42" \
++     --split-file "$WORK/train_r16_geo_s42/train_val_split.json" \
++     -o "$WORK/eval_r16_geo_s42/rollout_protocol_results.json"
++   ```
++
++## 关键修复
++
++- official 训练复用 source-disjoint 70/10/20 固定划分，hidden test 不进入训练器；
++- `MAX_TRAIN_SAMPLES`、rank/alpha/targets、训练配方、prompt/path 口径均进入 manifest identity；
++- official 默认且强制 `net_continuous + registration`，不合格运行 fail-closed；
++- SSIM/PSNR/LPIPS/FID/FVD 全部排除条件首帧，FID 使用全部预测帧；
++- 分布指标执行 `N>=32` 样本门；
++- 增加 80/50/30/10/5% condition-overlap、17/25/33 帧 horizon 与 2D flow proxy 协议；
++- rank `4/8/16/32/64`、target `attn_only/attn_cam/all`、Frozen 和三种子主配置已机器可读预注册。
++
++## 尚未完成的论文证据
++
++未下载模型或数据，未运行 GPU forward、LoRA 真注入计数、训练、跨域评估或真实 I3D
++特征抽取。Full FT 也没有被伪造成可运行项：双 14B 专家需要先实现并验证独立的
++FSDP/ZeRO 配方。任何表格行在对应 checkpoint、manifest、gate 和评估文件真实存在前，
++都只是实验计划，不是实验结果。
++
++完整变更见 `reports/file_manifest.md`、`reports/modification_summary.md` 和
++`patches/rswm_iclr_20260813.patch`；测试边界见 `reports/test_report.md`。
+diff --git "a/modified\\rswm_server_pack/docs/ICLR_EXPERIMENT_PROTOCOL.md" "b/modified\\rswm_server_pack/docs/ICLR_EXPERIMENT_PROTOCOL.md"
+new file mode 100644
+index 0000000..2a89eba
+--- /dev/null
++++ "b/modified\\rswm_server_pack/docs/ICLR_EXPERIMENT_PROTOCOL.md"
+@@ -0,0 +1,50 @@
++# Preregistered experiment protocol
++
++## Research question
++
++Can a trajectory-conditioned video diffusion model roll out spatially unobserved remote-sensing
++content continuously, and does its advantage over a frozen video prior remain when the generated
++view has little overlap with the single conditioning observation?
++
++The benchmark models spatial camera rollout over a static scene. It does not model elapsed Earth
++time or future land-cover dynamics.
++
++## Units and splits
++
++- Source image is the grouping unit for train/val/test. All samples connected by source identity
++  or identical `full_scene` content stay in one split.
++- Official ratios are 70/10/20. Test remains hidden from the training and local validation loaders.
++- Training seeds are 42/43/44; split seed is fixed at 42.
++- The unit for paired confidence intervals is a source/sample trajectory, not an individual frame.
++  Frames within one rollout are correlated observations.
++
++## Axes
++
++1. Adaptation: frozen, LoRA target family, LoRA rank. Full fine-tuning is not reportable until a
++   separately validated distributed recipe exists.
++2. Condition overlap: overlap between the t=0 conditioning crop and each predicted crop.
++3. Horizon: total clip length 17/25/33 (one condition frame plus 16/24/32 predictions).
++4. Cross-domain: AID-trained weights evaluated without target-domain retraining on WHU-RS19 and
++   RESISC45, after cross-dataset duplicate checks.
++
++Adjacent-frame overlap is a continuity audit, not the condition-overlap axis.
++
++## Metrics
++
++- Fidelity: SSIM, PSNR, LPIPS, FID on predicted frames only.
++- Video distribution: standard I3D FVD on the first 16 predicted frames, minimum 32 videos.
++- Control/geometry proxies: endpoint direction, segment angle, turn precision/recall, waypoint
++  error, Fréchet/DTW path shape, and generated-vs-GT 2D flow-vector consistency.
++
++The proxy metrics do not establish explicit 3D geometry, depth, or multiview consistency.
++
++## Reporting rules
++
++- Main configuration: mean and standard deviation across seeds plus paired source-level bootstrap
++  confidence intervals.
++- Rank/target ablations: seed 42, clearly labeled single-seed secondary results.
++- FID/FVD are omitted, not zero-filled, below the registered sample-size gate.
++- A run with a mismatched/overridden manifest, lenient submission contract, legacy prompt schema,
++  flow path estimator, or identity diagnostic route cannot enter the headline table.
++- No configuration row is a result until the corresponding run, evaluation, manifests, and gates
++  exist on disk.
+diff --git "a/original\\rswm_server_pack/lora_remotesense/new/dataset_loader.py" "b/modified\\rswm_server_pack/lora_remotesense/new/dataset_loader.py"
+index 9ef07d9..91983ae 100644
+--- "a/original\\rswm_server_pack/lora_remotesense/new/dataset_loader.py"
++++ "b/modified\\rswm_server_pack/lora_remotesense/new/dataset_loader.py"
+@@ -12,6 +12,7 @@ from torch.utils.data import Dataset, Subset
+ from typing import Dict, List, Optional, Tuple
+ from pathlib import Path
+ import random
++import json
+ 
+ 
+ def _truncation_allowed() -> bool:
+@@ -164,3 +165,48 @@ def split_dataset(
+     print(f"数据划分: {len(train_subset)} 训练, {len(val_subset)} 验证 (seed={seed})")
+     
+     return train_subset, val_subset, train_indices, val_indices
++
++
++def split_dataset_from_file(
++    dataset: LingBotDataset,
++    split_file: str,
++) -> Tuple[Subset, Subset, List[int], List[int]]:
++    """从预注册划分构造子集；official test 永不进入训练器。"""
++    p = Path(split_file)
++    if not p.is_file():
++        raise FileNotFoundError(f"划分文件不存在: {p}")
++    doc = json.loads(p.read_text(encoding="utf-8"))
++    if "train_indices" in doc and "val_indices" in doc:
++        train_indices = [int(i) for i in doc["train_indices"]]
++        val_indices = [int(i) for i in doc["val_indices"]]
++    elif isinstance(doc.get("splits"), dict):
++        try:
++            train_indices = [int(i) for i in doc["splits"]["train"]["indices"]]
++            val_indices = [int(i) for i in doc["splits"]["val"]["indices"]]
++        except (KeyError, TypeError) as e:
++            raise ValueError(
++                f"{p}: official split 缺 splits.train/val.indices") from e
++    else:
++        raise ValueError(
++            f"{p}: 不支持的 split schema；需要 train_indices/val_indices，"
++            f"或 splits.train|val.indices")
++
++    total = len(dataset)
++    for name, values in (("train", train_indices), ("val", val_indices)):
++        if len(values) != len(set(values)):
++            raise ValueError(f"{p}: {name} split 内有重复索引")
++        bad = [i for i in values if i < 0 or i >= total]
++        if bad:
++            raise IndexError(
++                f"{p}: {name} 有 {len(bad)} 个越界索引，示例 {bad[:5]}；"
++                f"数据集长度={total}")
++    leak = sorted(set(train_indices) & set(val_indices))
++    if leak:
++        raise ValueError(f"{p}: train/val 交集非空，示例 {leak[:5]}")
++    if not train_indices or not val_indices:
++        raise ValueError(f"{p}: train/val 都必须非空")
++
++    print(f"数据划分(预注册): {len(train_indices)} 训练, {len(val_indices)} 验证 "
++          f"from {p}")
++    return (Subset(dataset, train_indices), Subset(dataset, val_indices),
++            train_indices, val_indices)
+diff --git "a/original\\rswm_server_pack/lora_remotesense/new/evaluate.py" "b/modified\\rswm_server_pack/lora_remotesense/new/evaluate.py"
+index ff5c49b..3e5f7aa 100644
+--- "a/original\\rswm_server_pack/lora_remotesense/new/evaluate.py"
++++ "b/modified\\rswm_server_pack/lora_remotesense/new/evaluate.py"
+@@ -80,10 +80,21 @@ logger = logging.getLogger(__name__)
+ # ============================================================================
+ 
+ def load_val_indices(split_file: str) -> List[int]:
+-    """从 train_val_split.json 加载验证集 indices"""
+-    with open(split_file, "r") as f:
++    """从训练两路或 official 三路 JSON 加载验证集 indices。
++
++    hidden test 由提交服务器单独评分；本地 evaluate 默认只读 val，绝不把
++    official test 混进调参循环。
++    """
++    with open(split_file, "r", encoding="utf-8") as f:
+         split = json.load(f)
+-    return split["val_indices"]
++    if "val_indices" in split:
++        return [int(i) for i in split["val_indices"]]
++    try:
++        return [int(i) for i in split["splits"]["val"]["indices"]]
++    except (KeyError, TypeError) as e:
++        raise ValueError(
++            f"{split_file}: 不支持的 split schema；缺 val_indices 或 "
++            f"splits.val.indices") from e
+ 
+ 
+ # [v2.5 taxonomy] 与 lora_remotesense/scene_taxonomy.json 保持一致(单测校验):
+@@ -399,6 +410,9 @@ def run_inference_batch(
+     # drop+official 环境里被原样复用,再被当前环境写上 official/headline 标记。
+     from run_manifest import (build_manifest, read_manifest,
+                               write_manifest, assert_compatible, summarize)
++    # 评估产物必须能独立回答“这是哪个 rank / target / 训练配方的结果”。
++    # 旧版只记录 checkpoint 路径，目录一旦搬家或改名，论文表无法复核。
++    _train_manifest = read_manifest(lora_path) or {}
+     _cur_manifest = build_manifest(
+         role=os.environ.get("RSWM_RUN_ROLE", "eval"),
+         data_h5=os.environ.get("RSWM_MANIFEST_DATA_H5") or None,
+@@ -407,6 +421,18 @@ def run_inference_batch(
+         prompt_schema=(samples[0].get("prompt_schema") if samples else None),
+         frame_num=frame_num,
+         gen_seed=gen_seed,
++        train_seed=_train_manifest.get("train_seed"),
++        split_seed=_train_manifest.get("split_seed"),
++        dataset_tier=_train_manifest.get("dataset_tier"),
++        lora_rank=_train_manifest.get("lora_rank"),
++        lora_alpha=_train_manifest.get("lora_alpha"),
++        lora_targets=_train_manifest.get("lora_targets"),
++        max_train_samples=_train_manifest.get("max_train_samples"),
++        num_epochs=_train_manifest.get("num_epochs"),
++        batch_size=_train_manifest.get("batch_size"),
++        gradient_accumulation_steps=_train_manifest.get(
++            "gradient_accumulation_steps"),
++        learning_rate=_train_manifest.get("learning_rate"),
+         # [P0#8 + P0#1] 骨干与估计器进身份字段：换骨干的产物不可与旧产物互换
+         backbone=os.environ.get("RSWM_BACKBONE", "wan-inline"),
+         backbone_adaptation=("lora" if lora_path else "base"),
+diff --git "a/original\\rswm_server_pack/lora_remotesense/new/evaluate_baseline.py" "b/modified\\rswm_server_pack/lora_remotesense/new/evaluate_baseline.py"
+index 631bbfb..7434373 100644
+--- "a/original\\rswm_server_pack/lora_remotesense/new/evaluate_baseline.py"
++++ "b/modified\\rswm_server_pack/lora_remotesense/new/evaluate_baseline.py"
+@@ -160,8 +160,12 @@ def run_baseline_inference(
+         data_h5=os.environ.get("RSWM_MANIFEST_DATA_H5") or None,
+         split_file=os.environ.get("RSWM_MANIFEST_SPLIT") or None,
+         checkpoint_id="base",
++        prompt_schema=(samples[0].get("prompt_schema") if samples else None),
+         frame_num=frame_num,
+-        gen_seed=gen_seed)
++        gen_seed=gen_seed,
++        backbone=os.environ.get("RSWM_BACKBONE", "wan-inline"),
++        backbone_adaptation="frozen",
++        path_estimator=os.environ.get("RSWM_PATH_ESTIMATOR", "flow"))
+     if any(meta_dir.glob("*.json")):
+         assert_compatible(read_manifest(output_dir), _cur_manifest,
+                           ctx="baseline 断点续推")
+diff --git "a/original\\rswm_server_pack/lora_remotesense/new/metrics.py" "b/modified\\rswm_server_pack/lora_remotesense/new/metrics.py"
+index 9e3c67e..7127761 100644
+--- "a/original\\rswm_server_pack/lora_remotesense/new/metrics.py"
++++ "b/modified\\rswm_server_pack/lora_remotesense/new/metrics.py"
+@@ -151,6 +151,43 @@ def compute_video_lpips(
+ # FID (帧级)
+ # ============================================================================
+ 
++def _load_frame_feature_model(device: str = "cuda"):
++    """加载 FID 的 InceptionV3 特征器；失败返回 ``(None, None)``。
++
++    单独暴露加载/抽特征入口，是为了让隐藏测试评分器逐样本流式抽特征，
++    避免把几百条 480×832 的全部预测帧同时留在内存里。
++    """
++    try:
++        from torchvision.models import inception_v3
++        model = inception_v3(pretrained=True, transform_input=False).to(device).eval()
++        model.fc = _torch().nn.Identity()
++        return model, "inception_v3_pool3"
++    except Exception:
++        return None, None
++
++
++def _extract_frame_features(
++    frames: List[np.ndarray], model, device: str = "cuda", batch_size: int = 64
++) -> np.ndarray:
++    """从帧列表抽 Inception 特征；模型由 `_load_frame_feature_model` 提供。"""
++    feats = []
++    for i in range(0, len(frames), batch_size):
++        batch = frames[i : i + batch_size]
++        imgs = []
++        for f in batch:
++            img = _torch().from_numpy(f).permute(2, 0, 1).float() / 255.0
++            img = _torch().nn.functional.interpolate(
++                img.unsqueeze(0), size=(299, 299), mode="bilinear",
++                align_corners=False)
++            imgs.append(img)
++        imgs = _torch().cat(imgs, dim=0).to(device)
++        with _torch().no_grad():
++            feat = model(imgs).cpu().numpy()
++        feats.append(feat)
++    if not feats:
++        return np.empty((0, 0), dtype=np.float32)
++    return np.concatenate(feats, axis=0)
++
+ def compute_fid(
+     gen_frames_list: List[np.ndarray],
+     gt_frames_list: List[np.ndarray],
+@@ -161,31 +198,12 @@ def compute_fid(
+     计算 FID。输入为帧列表，每个元素 (H, W, C) uint8。
+     使用 InceptionV3 提取特征后计算 Fréchet distance。
+     """
+-    from torchvision.models import inception_v3
+     from scipy.linalg import sqrtm
+-
+-    model = inception_v3(pretrained=True, transform_input=False).to(device).eval()
+-    model.fc = _torch().nn.Identity()  # 取 2048-d 特征
+-
+-    def _extract_features(frames: List[np.ndarray]) -> np.ndarray:
+-        feats = []
+-        for i in range(0, len(frames), batch_size):
+-            batch = frames[i : i + batch_size]
+-            imgs = []
+-            for f in batch:
+-                img = _torch().from_numpy(f).permute(2, 0, 1).float() / 255.0
+-                img = _torch().nn.functional.interpolate(
+-                    img.unsqueeze(0), size=(299, 299), mode="bilinear", align_corners=False
+-                )
+-                imgs.append(img)
+-            imgs = _torch().cat(imgs, dim=0).to(device)
+-            with _torch().no_grad():
+-                feat = model(imgs).cpu().numpy()
+-            feats.append(feat)
+-        return np.concatenate(feats, axis=0)
+-
+-    feat_gen = _extract_features(gen_frames_list)
+-    feat_gt = _extract_features(gt_frames_list)
++    model, _ = _load_frame_feature_model(device)
++    if model is None:
++        raise RuntimeError("无法加载 InceptionV3 FID 特征器（离线权重缺失？）")
++    feat_gen = _extract_frame_features(gen_frames_list, model, device, batch_size)
++    feat_gt = _extract_frame_features(gt_frames_list, model, device, batch_size)
+ 
+     mu_gen, sigma_gen = feat_gen.mean(axis=0), np.cov(feat_gen, rowvar=False)
+     mu_gt, sigma_gt = feat_gt.mean(axis=0), np.cov(feat_gt, rowvar=False)
+diff --git "a/original\\rswm_server_pack/lora_remotesense/new/run_manifest.py" "b/modified\\rswm_server_pack/lora_remotesense/new/run_manifest.py"
+index 2237525..9a9d36f 100644
+--- "a/original\\rswm_server_pack/lora_remotesense/new/run_manifest.py"
++++ "b/modified\\rswm_server_pack/lora_remotesense/new/run_manifest.py"
+@@ -1,6 +1,6 @@
+ #!/usr/bin/env python3
+ # =============================================================================
+-# run_manifest.py — 一次运行的完整身份(v2.9.2)
++# run_manifest.py — 一次运行的完整身份(v3.2.0)
+ #
+ # 为什么需要它:v2.9.1 的外部审查发现三条"把错误产物洗成合格 headline"的路径,
+ # 根因都一样 —— **每处各自校验各自的一个字段**,于是:
+@@ -27,7 +27,7 @@ import os
+ from pathlib import Path
+ from typing import Any, Dict, Iterable, Optional
+ 
+-MANIFEST_VERSION = "2.9.2"
++MANIFEST_VERSION = "3.2.0"
+ MANIFEST_NAME = "run_manifest.json"
+ 
+ # 这些字段一旦不同,前一次的产物就不能拿来当这一次的结果用。
+@@ -39,15 +39,23 @@ IDENTITY_FIELDS = (
+     "data_h5_sha256",
+     "split_sha256",
+     "checkpoint_id",
++    "dataset_tier",
+     "prompt_schema",
+     "frame_num",
+     "gen_seed",
++    "train_seed",
+     "code_sha256",
+     # [v2.9.4] 训练身份的真正区分项(旧版全靠恒 None 的 split_file/gen_seed,
+     # 等于三个字段在空转)。缺这些的旧 manifest 会因"<缺失>"不等而被拒 —— 对。
+     "split_seed",
+     "lora_rank",
+     "lora_alpha",
++    "lora_targets",
++    "max_train_samples",
++    "num_epochs",
++    "batch_size",
++    "gradient_accumulation_steps",
++    "learning_rate",
+     # [RSRoll-Bench P0#1] 换骨干/换适配方式/换轨迹估计器/换重叠档,产物都不可互换。
+     # 缺了它们,一次 registration 跑出来的 Track B 会和 flow 跑出来的在同一张表里
+     # 静默混用 —— 而两者的仪器地板差一个数量级(50% 重叠下 111 px vs 0.09 px)。
+@@ -60,6 +68,7 @@ IDENTITY_FIELDS = (
+ # 判门/诊断类角色永远不进 headline;identity 口径同理(它是静止相机诊断臂)。
+ _NEVER_HEADLINE_ROLES = frozenset({
+     "diagnostic_stationary", "probe_gate", "legacy", "variant_attribution",
++    "trivial_baseline", "metric_calibration", "submission_scoring",
+     # [v3.1] 难度阶梯:它跑真数据真指标、论文要独立报告,但 K / 角度粒度 /
+     # overlap 三个旋钮都被**故意改过**,数字进主表会让 benchmark 看起来比它
+     # 实际定义的容易,而主表里没有任何字段提示"这几行来自另一个数据分布"。
+@@ -115,6 +124,9 @@ def code_sha256(files: Optional[Iterable[str | Path]] = None) -> str:
+             here / "backbone.py",
+             here / "trajectory_metrics.py",
+             here / "geom_registration.py",
++            here / "submission_contract.py",
++            root / "server_run" / "common.sh",
++            root / "server_run" / "score_submission.py",
+         ]
+     h = hashlib.sha256()
+     for f in sorted(Path(x) for x in files):
+@@ -125,7 +137,9 @@ def code_sha256(files: Optional[Iterable[str | Path]] = None) -> str:
+ 
+ 
+ def headline_eligible(profile: str, sem_arm_mode: str, pose_mode: str,
+-                      role: str, default_sem_arm: Optional[str] = None):
++                      role: str, default_sem_arm: Optional[str] = None,
++                      prompt_schema: Optional[str] = None,
++                      path_estimator: Optional[str] = None):
+     """→ (eligible: bool, reason: str|None)。
+ 
+     规则(全部必须成立):
+@@ -142,6 +156,12 @@ def headline_eligible(profile: str, sem_arm_mode: str, pose_mode: str,
+     if sem_arm_mode != default_sem_arm:
+         return False, (f"SEM_ARM_MODE={sem_arm_mode} 覆盖了 official 官方值 "
+                        f"{default_sem_arm}")
++    if profile == "official" and prompt_schema != "net_continuous":
++        return False, (f"official 主通路要求 prompt_schema=net_continuous，"
++                       f"实际为 {prompt_schema!r}")
++    if profile == "official" and path_estimator != "registration":
++        return False, (f"official 主通路要求 path_estimator=registration，"
++                       f"实际为 {path_estimator!r}")
+     if pose_mode == "identity":
+         return False, ("pose_mode=identity 是静止相机命令诊断臂,按拍板定义"
+                        "永远不入 headline")
+@@ -158,6 +178,17 @@ def build_manifest(*, role: str,
+                    prompt_schema: Optional[str] = None,
+                    frame_num: Optional[int] = None,
+                    gen_seed: Optional[int] = None,
++                   train_seed: Optional[int] = None,
++                   split_seed: Optional[int] = None,
++                   dataset_tier: Optional[str] = None,
++                   lora_rank: Optional[int] = None,
++                   lora_alpha: Optional[int] = None,
++                   lora_targets: Optional[str] = None,
++                   max_train_samples: Optional[int] = None,
++                   num_epochs: Optional[int] = None,
++                   batch_size: Optional[int] = None,
++                   gradient_accumulation_steps: Optional[int] = None,
++                   learning_rate: Optional[float] = None,
+                    backbone: Optional[str] = None,
+                    backbone_adaptation: Optional[str] = None,
+                    path_estimator: Optional[str] = None,
+@@ -167,7 +198,13 @@ def build_manifest(*, role: str,
+     sem_arm = os.environ.get("SEM_ARM_MODE", "unset")
+     pm = (pose_mode or os.environ.get("RSWM_POSE_MODE")
+           or os.environ.get("POSE_MODE") or "native")
+-    elig, why = headline_eligible(profile, sem_arm, pm, role)
++    resolved_prompt = (prompt_schema if prompt_schema is not None
++                       else os.environ.get("RSWM_PROMPT_SCHEMA"))
++    resolved_estimator = (path_estimator if path_estimator is not None
++                          else os.environ.get("RSWM_PATH_ESTIMATOR"))
++    elig, why = headline_eligible(
++        profile, sem_arm, pm, role,
++        prompt_schema=resolved_prompt, path_estimator=resolved_estimator)
+     m = {
+         "manifest_version": MANIFEST_VERSION,
+         "rswm_profile": profile,
+@@ -179,15 +216,31 @@ def build_manifest(*, role: str,
+         "split_file": str(split_file) if split_file else None,
+         "split_sha256": _sha256_file(split_file),
+         "checkpoint_id": checkpoint_id,
+-        "prompt_schema": prompt_schema,
++        "dataset_tier": (dataset_tier if dataset_tier is not None
++                         else os.environ.get("DATASET_TIER")),
++        "prompt_schema": resolved_prompt,
+         "frame_num": int(frame_num) if frame_num is not None else None,
+         "gen_seed": int(gen_seed) if gen_seed is not None else None,
++        "train_seed": int(train_seed) if train_seed is not None else None,
++        "split_seed": int(split_seed) if split_seed is not None else None,
++        "lora_rank": int(lora_rank) if lora_rank is not None else None,
++        "lora_alpha": int(lora_alpha) if lora_alpha is not None else None,
++        "lora_targets": lora_targets,
++        "max_train_samples": (int(max_train_samples)
++                              if max_train_samples is not None else None),
++        "num_epochs": int(num_epochs) if num_epochs is not None else None,
++        "batch_size": int(batch_size) if batch_size is not None else None,
++        "gradient_accumulation_steps": (
++            int(gradient_accumulation_steps)
++            if gradient_accumulation_steps is not None else None),
++        "learning_rate": (float(learning_rate)
++                          if learning_rate is not None else None),
+         "code_sha256": code_sha256(),
+         # [RSRoll-Bench P0#1] 身份字段。None 时回落到环境变量，
+         # 使未改造的调用方也能写出正确的身份（而不是全 None 让 assert_compatible 形同虚设）。
+         "backbone": backbone or os.environ.get("RSWM_BACKBONE", "wan-inline"),
+         "backbone_adaptation": backbone_adaptation,
+-        "path_estimator": path_estimator or os.environ.get("RSWM_PATH_ESTIMATOR", "flow"),
++        "path_estimator": resolved_estimator or "flow",
+         "step_overlap_band": step_overlap_band or os.environ.get("RSWM_STEP_OVERLAP_BAND"),
+         "headline_eligible": bool(elig),
+         "headline_ineligible_reason": why,
+diff --git "a/original\\rswm_server_pack/lora_remotesense/new/train.py" "b/modified\\rswm_server_pack/lora_remotesense/new/train.py"
+index 1278918..42db71a 100644
+--- "a/original\\rswm_server_pack/lora_remotesense/new/train.py"
++++ "b/modified\\rswm_server_pack/lora_remotesense/new/train.py"
+@@ -28,6 +28,7 @@ import time
+ import json
+ import signal
+ import traceback
++import hashlib
+ from pathlib import Path
+ from typing import Dict, List, Optional
+ from datetime import datetime
+@@ -66,7 +67,8 @@ from wan.utils.cam_utils import (
+     get_plucker_embeddings,
+     get_Ks_transformed,
+ )
+-from dataset_loader import LingBotDataset, split_dataset  # new/ 本地副本
++from dataset_loader import (LingBotDataset, split_dataset,
++                            split_dataset_from_file)  # new/ 本地副本
+ from wan.distributed.util import init_distributed_group
+ 
+ 
+@@ -235,12 +237,14 @@ class RemoteSenseLoRATrainer:
+         )
+         self.config = WAN_CONFIGS["i2v-A14B"]
+         self.boundary_step = int(self.config.boundary * self.config.num_train_timesteps)
++        self._data_prompt_schema = None
+ 
+         # [v2.8.2 C3] pose_mode↔H5 一致性在【加载任何模型之前】就校验。
+         # 旧位置在第一个 training step 里(compute_loss 惰性检查),于是每次误配
+         # 都要先把两个 14B DiT + VAE + T5 全加载完、跑完第一批 VAE encode 才炸,
+         # 白烧十几分钟 GPU 分配 —— 而误配恰恰是最常见的失败(见 C3 那批老入口)。
+         self._assert_pose_mode(getattr(args, "pose_mode", "native"))
++        self._assert_prompt_schema()
+         self._pose_mode_checked = True
+         # [v2.9.1] 续训门同样提前:它只读一个 JSON,却曾排在两个 14B 加载 +
+         # LoRA 权重载入之后 —— 与刚做的"省掉误配那十几分钟"是同一件事。
+@@ -452,12 +456,16 @@ class RemoteSenseLoRATrainer:
+         # 划分种子与训练种子解耦:多训练种子实验必须固定 split_seed(=42),
+         # 否则每个种子训到不同划分 → 共享验证集被泄漏进训练、种子间不可比。
+         split_seed = self.args.split_seed if self.args.split_seed is not None else self.args.seed
+-        train_sub, val_sub, train_idx, val_idx = split_dataset(
+-            full_dataset,
+-            train_ratio=self.args.train_ratio,
+-            val_ratio=self.args.val_ratio,
+-            seed=split_seed,
+-        )
++        if self.args.split_file:
++            train_sub, val_sub, train_idx, val_idx = split_dataset_from_file(
++                full_dataset, self.args.split_file)
++        else:
++            train_sub, val_sub, train_idx, val_idx = split_dataset(
++                full_dataset,
++                train_ratio=self.args.train_ratio,
++                val_ratio=self.args.val_ratio,
++                seed=split_seed,
++            )
+         self.train_dataset = train_sub
+         self.val_dataset = val_sub
+         self.train_indices = train_idx
+@@ -637,6 +645,43 @@ class RemoteSenseLoRATrainer:
+                 f"pose_mode=identity 但数据不是中和 H5(pose_injection={inj})"
+                 f" —— 静止相机诊断臂必须配 neutralize 过的 H5。")
+ 
++    def _assert_prompt_schema(self) -> None:
++        """训练声明必须与 H5 实际 prompt schema 一致，official 缺字段即拒。
++
++        prompt 是 drop/text-only 臂唯一的轨迹命令来源。若运行环境写
++        ``net_continuous``、H5 却仍是旧四方向 ``net``，训练本身不会崩，
++        manifest 还会把旧数据错误认证为连续轨迹实验，因此必须在加载模型前校验。
++        """
++        import h5py
++
++        h5 = Path(self.args.data_path)
++        try:
++            with h5py.File(h5, "r") as f:
++                raw = (f["metadata"].attrs.get("prompt_schema")
++                       if "metadata" in f else None)
++                if raw is not None:
++                    self._data_prompt_schema = (
++                        raw.decode() if isinstance(raw, bytes) else str(raw))
++        except Exception as e:
++            raise RuntimeError(
++                f"[prompt_schema] 无法读取 {h5} 的数据口径: {e}") from e
++
++        declared = os.environ.get("RSWM_PROMPT_SCHEMA")
++        profile = os.environ.get("RSWM_PROFILE", "unset")
++        if self._data_prompt_schema is None:
++            if profile == "official":
++                raise RuntimeError(
++                    f"[prompt_schema] official 训练要求 H5 metadata.prompt_schema，"
++                    f"但 {h5} 未记录；无法证明数据是连续 prompt 口径。请重建数据。")
++            logger.warning("[prompt_schema] H5 未记录 schema（legacy 兼容，仅诊断可用）")
++            return
++        if declared and declared != self._data_prompt_schema:
++            raise ValueError(
++                f"[prompt_schema] 环境声明={declared}，H5 实际="
++                f"{self._data_prompt_schema} —— 拒绝把旧 prompt 数据标成新口径。")
++        logger.info("[prompt_schema] H5=%s，声明=%s",
++                    self._data_prompt_schema, declared or "<未设>")
++
+     def _prepare_plucker_embeddings(self, batch: Dict) -> Optional[Dict]:
+         video = batch["video_frames"]
+         B, F_total, C, H, W = video.shape
+@@ -980,25 +1025,45 @@ class RemoteSenseLoRATrainer:
+ 
+     def _build_run_manifest(self) -> dict:
+         """[v2.9.2] 本次训练的完整身份。续训、评测复用、汇总三处共用同一份字段。"""
+-        from run_manifest import build_manifest
++        from run_manifest import build_manifest, sha256_file
+         a = self.args
+-        # [v2.9.4] 只用【真实存在】的 argparse 属性。train.py 没有 --split_file
+-        # 也没有 --gen_seed,旧写法 getattr(...) 静默取到 None → split_sha256 与
+-        # gen_seed 两个身份字段恒 None,等于没在校验;而真正决定训练身份的
+-        # --split_seed(它定 train/val 划分)反倒没进 manifest。
+-        _split_json = Path(getattr(a, "output_dir", ".")) / "train_val_split.json"
++        # manifest 绑定训练器最终实际采用的两路视图（含 cap 后索引）。
++        # 原始 official 三路文件另以 source_split_file/source_split_sha256 留在
++        # extra，既能证明 test 未进训练，也避免训练 checkpoint 与 eval 的
++        # val-only split 因文件格式不同而无法比较。
++        _split_json = (Path(getattr(a, "output_dir", ".")) /
++                       "train_val_split.json")
++        _source_split = (Path(a.split_file) if getattr(a, "split_file", None)
++                         else None)
+         return build_manifest(
+             role=os.environ.get("RSWM_RUN_ROLE", "train"),
+             pose_mode=getattr(a, "pose_mode", "native"),
+             data_h5=getattr(a, "data_path", None),
+             split_file=_split_json if _split_json.is_file() else None,
+             checkpoint_id=str(getattr(a, "checkpoint_dir", "")),
++            prompt_schema=self._data_prompt_schema,
+             frame_num=getattr(a, "max_frames", None),
+-            gen_seed=getattr(a, "seed", None),
+-            extra={"split_seed": getattr(a, "split_seed", None),
+-                   "lora_rank": getattr(a, "lora_rank", None),
+-                   "lora_alpha": getattr(a, "lora_alpha", None),
+-                   "num_epochs": getattr(a, "num_epochs", None)},
++            train_seed=getattr(a, "seed", None),
++            split_seed=(getattr(a, "split_seed", None)
++                        if getattr(a, "split_seed", None) is not None
++                        else getattr(a, "seed", None)),
++            dataset_tier=os.environ.get("DATASET_TIER"),
++            lora_rank=getattr(a, "lora_rank", None),
++            lora_alpha=getattr(a, "lora_alpha", None),
++            lora_targets=getattr(a, "lora_targets", None),
++            max_train_samples=getattr(a, "max_train_samples", None),
++            num_epochs=getattr(a, "num_epochs", None),
++            batch_size=getattr(a, "batch_size", None),
++            gradient_accumulation_steps=getattr(
++                a, "gradient_accumulation_steps", None),
++            learning_rate=getattr(a, "learning_rate", None),
++            extra={
++                "source_split_file": (str(_source_split)
++                                      if _source_split is not None else None),
++                "source_split_sha256": (
++                    sha256_file(_source_split)
++                    if _source_split is not None else None),
++            },
+         )
+ 
+     def _assert_resume_pose_mode(self, checkpoint_path: str) -> None:
+@@ -1231,6 +1296,13 @@ class RemoteSenseLoRATrainer:
+             f"checkpoint-epoch-{epoch}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+         )
+         save_dir.mkdir(parents=True, exist_ok=True)
++        # 先写本次实际 train/val 索引，再建 manifest；否则首个 checkpoint
++        # 生成时 output_dir/train_val_split.json 尚不存在，split_sha256 会是 None，
++        # 后续 epoch/续训看到文件存在又变成真 hash，身份会自相矛盾。
++        split_path = Path(self.args.output_dir) / "train_val_split.json"
++        if not split_path.is_file():
++            raise RuntimeError(
++                f"保存 checkpoint 前缺 {split_path}；无法把实际划分绑定进 manifest")
+         # [v2.9.2] 每个 checkpoint 自带完整身份。续训与评测都据此校验,
+         # 不再靠"training_config.json 里某个字段"这种单点比对。
+         from run_manifest import write_manifest
+@@ -1267,6 +1339,8 @@ class RemoteSenseLoRATrainer:
+             "lora_rank": self.args.lora_rank,
+             "lora_alpha": self.args.lora_alpha,
+             "lora_targets": self.args.lora_targets,
++            "max_train_samples": self.args.max_train_samples,
++            "prompt_schema": self._data_prompt_schema,
+             # 参数效率审计 (advisor point 8): 同样折进 checkpoint config,
+             # 让 eval/分析端不依赖 output_dir/param_audit.json 也能还原。
+             "param_audit": getattr(self, "param_audit", None),
+@@ -1286,7 +1360,13 @@ class RemoteSenseLoRATrainer:
+                 "train_seed": self.args.seed,
+                 "split_seed": (self.args.split_seed
+                                if getattr(self.args, "split_seed", None) is not None
+-                               else self.args.seed),
++                                else self.args.seed),
++                "max_train_samples": self.args.max_train_samples,
++                "prompt_schema": self._data_prompt_schema,
++                "split_file": self.args.split_file,
++                "source_split_sha256": (
++                    hashlib.sha256(Path(self.args.split_file).read_bytes()).hexdigest()
++                    if self.args.split_file else None),
+             },
+         }
+         with open(save_dir / "training_config.json", "w", encoding="utf-8") as f:
+@@ -1341,6 +1421,17 @@ class RemoteSenseLoRATrainer:
+                 "split_seed": (self.args.split_seed
+                                if getattr(self.args, "split_seed", None) is not None
+                                else self.args.seed),
++                # 训练集上限和 prompt 口径都是数据身份的一部分。旧版只写索引，
++                # 事后无法判断这是全量训练还是 smoke/capped run，也无法证明
++                # 训练时实际使用的是 net 还是 net_continuous prompt。
++                "max_train_samples": (
++                    int(self.args.max_train_samples)
++                    if self.args.max_train_samples is not None else None),
++                "prompt_schema": self._data_prompt_schema,
++                "split_file": self.args.split_file,
++                "source_split_sha256": (
++                    hashlib.sha256(Path(self.args.split_file).read_bytes()).hexdigest()
++                    if self.args.split_file else None),
+             }
+             with open(out_dir / "train_val_split.json", "w", encoding="utf-8") as f:
+                 json.dump(split_info, f, indent=2, ensure_ascii=False)
+@@ -1468,6 +1559,9 @@ def parse_args():
+     p.add_argument("--split_seed", type=int, default=None,
+                    help="train/val 划分种子;默认=--seed(向后兼容)。多训练种子实验必须固定"
+                         "(如 --seed 43 --split_seed 42),否则划分漂移+共享验证集泄漏进训练")
++    p.add_argument("--split_file", type=str, default=None,
++                   help="预注册 train/val 或官方三路 split JSON；给定时不随机划分，"
++                        "且 official test 永不进入训练器")
+     # [v2.8 ④] 位姿通路三态 —— 三个臂的唯一区分点,必须写进 checkpoint 与
+     # 评估元数据;与 H5 的 pose_injection 冲突时硬错(见 _assert_pose_mode)
+     p.add_argument("--pose_mode", type=str, default="native",
+diff --git "a/modified\\rswm_server_pack/reports/code_audit.md" "b/modified\\rswm_server_pack/reports/code_audit.md"
+new file mode 100644
+index 0000000..12dfaa4
+--- /dev/null
++++ "b/modified\\rswm_server_pack/reports/code_audit.md"
+@@ -0,0 +1,63 @@
++# 代码审计结论（更新版）
++
++## 项目识别
++
++- 项目：RSWM / RSRoll-Bench server pack，遥感连续轨迹视频 rollout 与 LoRA 评估工程。
++- 只读来源：`C:\Users\25828\Desktop\游戏\ctw\rsroll-bench-server-20260731c.tar.gz`。
++- 源包 SHA-256：`FCA092BA5F294EE7FD3DA3A485484CA4716698237BCEE8ABBA9CB20B6591E9D6`。
++- 选择理由：该包包含 v5 trajectory builder、双 14B I2V 专家、LoRA target 审计、
++  corrected 20–36 PBS 链、Track B v2、submission contract 与标准 I3D-FVD 重算，
++  比目录内 legacy 01–19 链完整。原始包没有可用于确定 commit 的 `.git` 元数据，
++  因而 Git commit 为“不可核实”，不能根据文件日期伪造。
++- 工程声明的正式环境：Linux x86_64、Python 3.10、PyTorch 2.4.0+cu121、
++  torchvision 0.19.0、CUDA 12.1；详见 `requirements-lock.txt`。
++- 本机测试环境：Python 3.13.5、PyTorch 2.11.0 CPU、无 CUDA。它只用于 CPU
++  契约回归，不是论文数值复现环境。
++
++## 实际模型与数据流
++
++```text
++AID / cross-domain RGB source image
++  -> v5 continuous polyline trajectory + sliding-window pseudo video
++  -> HDF5 (image, T-frame video, prompt, intrinsics, c2w/Pluecker, trajectory)
++  -> frozen T5 text encoder + Wan 2.1 VAE
++  -> low-noise / high-noise Wan i2v-A14B Video DiT experts
++  -> LoRA adapters (all | attn_cam | attn_only)
++  -> diffusion denoising loss in latent video space
++  -> video rollout inference
++  -> future-frame fidelity + trajectory/control metrics
++```
++
++这是“静态场景上的空间相机 rollout”，不是 Earth future dynamics prediction。
++
++## LoRA 核实
++
++- 已支持 PEFT LoRA；两个专家分别调用 `get_loraconfig(..., targets=...)` 后
++  `get_peft_model`。
++- target 不是猜测的 `q_proj/v_proj` 字符串，而由真实 Wan block 分类器选择：
++  `attn_only`、`attn_cam`、`all`；训练初始化时会输出 `param_audit.json`，并在发现
++  非 LoRA 参数意外可训练或零可训练参数时失败。
++- 本机没有 56GB 基模和 GPU，因此真实 module 数、可训练参数总量与比例未重新实例化；
++  需要在服务器 smoke run 的 `param_audit.json` 中取权威数字。
++
++## 审计后判断
++
++- Video diffusion backbone、视频输入输出、连续 trajectory/Pluecker 通路与 benchmark
++  builder 已存在，不需要改造成另一套主干。
++- “低 overlap”旧证据只约束首尾窗口；相邻帧实际仍是高 overlap。论文应把自变量定义成
++  条件帧到未来帧 overlap，相邻 overlap 作为连续性审计。
++- 旧 official 运行仍有三个 P0：样本 cap 未从 shell 到训练器、manifest 缺关键配方、
++  server scorer 将条件帧算进保真指标。此版本已修复。
++- 原工程已有外部 baseline registry/stub，但没有运行结果。MVSplat360 的多视图+pose 输入
++  与本任务单图输入不公平，不进入主表。
++- Full FT 不存在可验证实现；双 14B 专家不能用现有 LoRA optimizer/offload 路径简单
++  `requires_grad_(True)` 后冒充公平 baseline。
++
++## 风险分级
++
++- P0 已处理：official split 没接训练、样本上限断链、manifest 不完整、条件帧评分虚高、
++  official prompt/path 默认仍是 legacy、分布指标极小 N。
++- P1 已加入基础设施：overlap/horizon 曲线、2D flow consistency proxy、rank/target 预注册。
++- P1 待真跑：低 overlap 优势、任意方向、长程累积、跨域泛化都还没有数值证据。
++- P2 待工程：公平 Full FT（FSDP/ZeRO）和 image extrapolation 外部 baseline adapter。
++- P3：历史文档和 legacy PBS 仍较多；均保留以避免破坏旧结果，但正式入口已明确。
+diff --git "a/modified\\rswm_server_pack/reports/file_manifest.md" "b/modified\\rswm_server_pack/reports/file_manifest.md"
+new file mode 100644
+index 0000000..8188148
+--- /dev/null
++++ "b/modified\\rswm_server_pack/reports/file_manifest.md"
+@@ -0,0 +1,69 @@
++# 文件修改清单
++
++基线源归档：
++`C:\Users\25828\Desktop\游戏\ctw\rsroll-bench-server-20260731c.tar.gz`。
++
++下面所有路径均相对于归档内 `rswm_server_pack/`；修改版保持相同相对结构。原始
++`ctw` 目录没有被覆盖、移动或删除。
++
++## 新增文件（12）
++
++1. `README_MODIFICATIONS.md`
++2. `README_ICLR_MODIFICATIONS.md`
++3. `docs/ICLR_EXPERIMENT_PROTOCOL.md`
++4. `reports/code_audit.md`
++5. `reports/version_verification.md`
++6. `reports/modification_summary.md`
++7. `reports/test_report.md`
++8. `reports/file_manifest.md`
++9. `server_run/iclr_experiment_matrix.json`
++10. `server_run/iclr_matrix.py`
++11. `server_run/evaluate_rollout_protocol.py`
++12. `server_run/test_iclr_protocol.py`
++
++交付时另生成 `patches/rswm_iclr_20260813.patch` 和 `patches/SHA256SUMS.txt`；它们是
++交付元数据，不计入源代码 diff 统计。
++
++## 修改文件（19）
++
++1. `lora_remotesense/new/dataset_loader.py`
++2. `lora_remotesense/new/evaluate.py`
++3. `lora_remotesense/new/evaluate_baseline.py`
++4. `lora_remotesense/new/metrics.py`
++5. `lora_remotesense/new/run_manifest.py`
++6. `lora_remotesense/new/train.py`
++7. `server_run/check_benchmark_duplicates.py`
++8. `server_run/check_near_duplicates.py`
++9. `server_run/common.sh`
++10. `server_run/pbs/01_build_data.pbs`
++11. `server_run/pbs/34a_learnability_drop.pbs`
++12. `server_run/pbs/34b_learnability_native.pbs`
++13. `server_run/pbs/51_ladder_train_eval.pbs`
++14. `server_run/pbs/_pbs_env.sh`
++15. `server_run/pbs/qsub_corrected_rerun.sh`
++16. `server_run/recompute_fvd_i3d.py`
++17. `server_run/score_submission.py`
++18. `server_run/test_pose_timeline.py`
++19. `server_run/test_submission_contract.py`
++
++## 未修改但重要的文件
++
++- `lora_remotesense/new/backbone.py`：两专家 Video DiT 与真实 LoRA target 分类/审计入口。
++- `wan/modules/model.py`：Wan Video DiT 主干；本次有意保持 checkpoint 兼容。
++- `lora_remotesense/build_dataset_from_benchmark.py`：AID/cross-domain 轨迹视频 HDF5 构建入口。
++- `server_run/make_official_splits.py`：已有的 source-disjoint 三路划分生成器，本次接入正式链。
++- `requirements-lock.txt`：正式 Linux/CUDA 环境锁定依据。
++- `server_run/baselines/baseline_status.json`：外部 baseline 仍为未运行状态，未伪造结果。
++
++## 删除文件
++
++无。
++
++## 路径映射
++
++```text
++原始：源归档 / rswm_server_pack / <relative_path>
++修改：交付目录 / rswm_server_pack / <relative_path>
++```
++
++逐行 unified diff 位于 `patches/rswm_iclr_20260813.patch`。
+diff --git "a/modified\\rswm_server_pack/reports/modification_summary.md" "b/modified\\rswm_server_pack/reports/modification_summary.md"
+new file mode 100644
+index 0000000..c47ff64
+--- /dev/null
++++ "b/modified\\rswm_server_pack/reports/modification_summary.md"
+@@ -0,0 +1,36 @@
++# 修改摘要
++
++## 修改文件
++
++| 文件 | 原行为 | 修改后行为 | checkpoint 影响 |
++|---|---|---|---|
++| `server_run/common.sh` | `MAX_TRAIN_SAMPLES` 不透传；official 默认 net/flow | 透传 cap/split；official 默认 continuous/registration；错误口径不进 headline | 旧 adapter 可加载；续训 identity 更严格 |
++| `lora_remotesense/new/train.py` | 随机两路 split；manifest 缺训练配方 | 支持预注册三路 split；test 排除；记录完整配方/prompt/cap | 旧无完整 manifest 的断点默认拒绝复用，防污染 |
++| `dataset_loader.py` | 只支持随机 80/20 | 支持两路和 official 三路 JSON，范围/重复/交集硬门 | 不改变样本张量格式 |
++| `run_manifest.py` | identity 字段不足，official prompt/path 可未知 | manifest 3.2，配方完整，official fail-closed | 不改权重，只改复用资格 |
++| `evaluate.py` / `evaluate_baseline.py` | eval manifest 无 rank/target；baseline 缺 prompt/backbone | 从 checkpoint 继承训练身份；Frozen 明确标注 | 推理 API 不变 |
++| `metrics.py` | FID 特征入口不可流式复用 | 暴露统一 frame feature loader/extractor | 数值口径不变 |
++| `score_submission.py` | 条件帧进入 SSIM/PSNR/LPIPS/FID/FVD；FID 仅中帧 | 全部保真只看 future；FID 全预测帧；N>=32 | 不涉及权重 |
++| `recompute_fvd_i3d.py` | 标准 FVD 包含条件帧，极小 N 可出数 | 条件帧后取 16 帧；N>=32；报告 selection | 数字与旧版不可直接混用（语义修正） |
++| split/duplicate 检查器 | official 三路 schema 可能绕过 | 两路/三路兼容，val+test 作为 holdout | 无 |
++| PBS official 链 | 训练器仍自己随机 split | 01 生成 official split，后续训练自动读取 | 新跑结果与旧随机 split 不可混用 |
++| tests | 未覆盖上述协议 | 新增行为级矩阵/split/rollout 测试；评分入口未来帧测试 | 无 |
++
++## 新增文件
++
++- `server_run/iclr_experiment_matrix.json`
++- `server_run/iclr_matrix.py`
++- `server_run/evaluate_rollout_protocol.py`
++- `server_run/test_iclr_protocol.py`
++- `docs/ICLR_EXPERIMENT_PROTOCOL.md`
++- `README_ICLR_MODIFICATIONS.md`
++- `reports/*`
++
++## 明确未做
++
++- 未修改 Video DiT 主干架构。
++- 未启动长时训练或下载数据/权重。
++- 未产生任何 LoRA、Frozen、Full FT 或外部 baseline 的论文结果。
++- 未实现 Full FT；矩阵中为 `runnable=false`，防止空行被误认为结果。
++- 未声称 2D optical-flow proxy 等同于 3D geometry awareness。
++- 未删除任何源文件或历史结果。
+diff --git "a/modified\\rswm_server_pack/reports/test_report.md" "b/modified\\rswm_server_pack/reports/test_report.md"
+new file mode 100644
+index 0000000..ea74558
+--- /dev/null
++++ "b/modified\\rswm_server_pack/reports/test_report.md"
+@@ -0,0 +1,55 @@
++# 测试报告
++
++执行日期：2026-08-13（Asia/Shanghai）。
++
++## 已执行且通过
++
++- 修改文件 `py_compile`：PASS。
++- 全工程 `python -m compileall -q .`：PASS；测试后已清理生成的 `__pycache__`。
++- 核心模块 import：PASS（按项目既有入口把 `lora_remotesense/new` 加入
++  `PYTHONPATH` 后，`dataset_loader/run_manifest/metrics/evaluate/evaluate_baseline` 均成功）。
++- 全部 11 个 JSON 配置/元数据文件：`json.load` PASS。
++- unified diff：`git apply --check` 在全新基线副本上 PASS。
++- `server_run/iclr_matrix.py --check-only`：PASS，10/11 runnable；Full FT 唯一被阻塞。
++- `evaluate_rollout_protocol.py --self-test`：10 PASS / 0 FAIL。
++- `test_iclr_protocol.py`：25 PASS / 0 FAIL，包含 HDF5 official split、hidden-test 排除、
++  manifest mismatch、17 帧 rollout overlap/horizon/flow proxy 端到端小夹具。
++- `test_submission_contract.py`：93 PASS / 0 FAIL。
++- `recompute_fvd_i3d.py --self-test`：全部 PASS，含闭式 Fréchet known answer、32 视频
++  样本门、未来 16 帧选择、配对和 headline 故障注入。
++- 全部 9 个 `server_run/test_*.py` 文件：退出码均为 0：
++  - backbone protocol：86 PASS；
++  - ICLR protocol：25 PASS；
++  - metrics known answer：68 PASS / 1 SKIP；
++  - pose timeline：297 PASS；
++  - route resolution：15 PASS；
++  - semantic gate：88 PASS；
++  - submission contract：93 PASS；
++  - taxonomy/prompt：49 PASS；
++  - well-posed dual column：17 PASS。
++
++唯一 SKIP 是 `lpips_identical_is_zero`，原因是本机未安装 `lpips`；测试程序明确将其记为
++依赖缺失而非 PASS。
++
++Windows 沙箱最初拒绝 h5py/NumPy 在系统 `%TEMP%` 写小夹具；随后经授权把 `TEMP/TMP`
++指向工作区临时目录重跑，所有测试通过。这是环境权限重试，不是掩盖代码失败。
++
++一次直接从包根执行 package-style import 时，`metrics.py` 因项目沿用的扁平脚本导入
++`from submission_contract import ...` 报错；按现有训练/评估入口使用的模块路径设置
++`PYTHONPATH=lora_remotesense/new` 后，五个核心模块均通过。未将这个既有启动约定误记为
++失败，也未在本次最小侵入改造中重写整个包的 import 体系。
++
++## 未执行 / 未验证
++
++- Bash `bash -n`：本机只有 WindowsApps 的 WSL 启动占位符，无 Git Bash/WSL shell，
++  因而未执行；shell 变更由静态断言和既有测试覆盖，但仍需在 Linux 登录节点运行
++  `bash -n server_run/common.sh server_run/pbs/*.pbs`。
++- 真实 56GB Wan/LingBot checkpoint 加载：未执行。
++- 真实 LoRA 注入参数量：未执行；服务器应检查 `param_audit.json` 中 trainable > 0、
++  仅 LoRA 可训练及 combined ratio。
++- 1-batch/1-step GPU smoke、真实 forward、bf16/CUDA/flash-attn：未执行。
++- 标准 I3D 真权重前向：未执行；本机只跑假提取器管线自检。
++- 任何训练、真实数据集构建、跨域评估与论文指标：未执行。
++
++本机环境（Python 3.13.5 / torch 2.11.0+cpu / numpy 2.1.3）不等于正式锁定环境
++（Python 3.10 / torch 2.4.0 cu121 / numpy<2），不能用于声称论文复现。
+diff --git "a/modified\\rswm_server_pack/reports/version_verification.md" "b/modified\\rswm_server_pack/reports/version_verification.md"
+new file mode 100644
+index 0000000..b442ca8
+--- /dev/null
++++ "b/modified\\rswm_server_pack/reports/version_verification.md"
+@@ -0,0 +1,20 @@
++# 版本核实
++
++## 建议基线
++
++- 源归档：`rsroll-bench-server-20260731c.tar.gz`
++- 大小：1,568,993 bytes
++- SHA-256：`FCA092BA5F294EE7FD3DA3A485484CA4716698237BCEE8ABBA9CB20B6591E9D6`
++- 内部主要文档版本：v3.0/v3.1 系列；本次 manifest 升为 3.2.0。
++
++归档不包含可用 `.git` 历史，因此 branch、HEAD、tag、remote commit 与未提交状态均无法从
++源包核实。本次工作目录外层 Git 仓库不是原项目的上游历史，不能拿来冒充源项目 commit。
++
++未发现能唯一确定官方上游仓库与 commit 的可靠 Git 元数据。本次没有 `git fetch`、没有
++升级依赖、没有下载 checkpoint，也没有宣称远程最新版已核实。
++
++## 源目录保护
++
++只读源归档未被解包覆盖或修改。本次修改发生在独立工作副本，最终交付到
++`C:\Users\25828\Desktop\lora`。验收时应再次计算源归档 SHA-256；只要仍等于上述值，
++即可证明源包内容未变化。
+diff --git "a/original\\rswm_server_pack/server_run/check_benchmark_duplicates.py" "b/modified\\rswm_server_pack/server_run/check_benchmark_duplicates.py"
+index 731cc8a..28f20af 100644
+--- "a/original\\rswm_server_pack/server_run/check_benchmark_duplicates.py"
++++ "b/modified\\rswm_server_pack/server_run/check_benchmark_duplicates.py"
+@@ -36,6 +36,30 @@ import numpy as np
+ import h5py
+ 
+ 
++def load_train_holdout_split(path):
++    """兼容训练器两路 split 与 make_official_splits 的三路发布格式。
++
++    重复检查只需要回答“是否跨训练/留出集”。official 格式下 val+test
++    都属于 holdout，不能因为键名嵌在 ``splits.*.indices`` 就绕过泄漏门。
++    """
++    with open(path, encoding="utf-8") as fh:
++        split = json.load(fh)
++    if "train_indices" in split and "val_indices" in split:
++        return set(split["train_indices"]), set(split["val_indices"])
++    blocks = split.get("splits")
++    if isinstance(blocks, dict):
++        def _idx(name):
++            b = blocks.get(name, {})
++            return list(b.get("indices", [])) if isinstance(b, dict) else []
++        train = set(_idx("train"))
++        holdout = set(_idx("val")) | set(_idx("test"))
++        if train and holdout:
++            return train, holdout
++    raise ValueError(
++        f"{path}: 不支持的 split schema；需要 train_indices/val_indices，"
++        f"或 splits.train|val|test.indices")
++
++
+ def md5(*arrays):
+     h = hashlib.md5()
+     for a in arrays:
+@@ -67,9 +91,7 @@ def main():
+     args = ap.parse_args()
+ 
+     if args.split:
+-        split = json.load(open(args.split))
+-        train_set = set(split["train_indices"])
+-        val_set = set(split["val_indices"])
++        train_set, val_set = load_train_holdout_split(args.split)
+     else:
+         train_set, val_set = set(), set()
+         print("[info] 未给 --split:跳过 train/val 泄漏交叉,只做重复分组"
+diff --git "a/original\\rswm_server_pack/server_run/check_near_duplicates.py" "b/modified\\rswm_server_pack/server_run/check_near_duplicates.py"
+index 9b9e05c..7d1c39e 100644
+--- "a/original\\rswm_server_pack/server_run/check_near_duplicates.py"
++++ "b/modified\\rswm_server_pack/server_run/check_near_duplicates.py"
+@@ -634,8 +634,28 @@ def check_leakage(h5_path: str, splits_path: str, *, threshold: int,
+     """train/val/test 之间的**内容**重复。source-disjoint 拦不住这个。"""
+     fn = HASHERS[hasher]
+     sp = json.loads(Path(splits_path).read_text())
++    # 支持三种现实中同时存在的格式：
++    # 1) {train:[keys], val:[keys], test:[keys]}（内容级工具原格式）；
++    # 2) make_official_splits: splits.<name>.keys；
++    # 3) 训练器索引格式。索引要按 H5 sorted(data.keys()) 映射成 key。
+     groups = {k: set(v) for k, v in sp.items()
+               if isinstance(v, list) and k in ("train", "val", "test")}
++    if not groups and isinstance(sp.get("splits"), dict):
++        groups = {
++            k: set(v.get("keys", []))
++            for k, v in sp["splits"].items()
++            if k in ("train", "val", "test") and isinstance(v, dict)
++        }
++    if not groups and "train_indices" in sp and "val_indices" in sp:
++        with h5py.File(h5_path, "r") as _sf:
++            _keys = sorted((_sf["data"] if "data" in _sf else _sf).keys())
++        def _map_idx(values):
++            return {_keys[int(i)] for i in values if 0 <= int(i) < len(_keys)}
++        groups = {
++            "train": _map_idx(sp.get("train_indices", [])),
++            "val": _map_idx(sp.get("val_indices", [])),
++        }
++    groups = {k: v for k, v in groups.items() if v}
+     if len(groups) < 2:
+         raise Unusable(
+             f"{splits_path}: 需要至少两个 split(train/val/test),实得 {sorted(groups)}")
+diff --git "a/original\\rswm_server_pack/server_run/common.sh" "b/modified\\rswm_server_pack/server_run/common.sh"
+index e8f98cd..01fd407 100644
+--- "a/original\\rswm_server_pack/server_run/common.sh"
++++ "b/modified\\rswm_server_pack/server_run/common.sh"
+@@ -96,6 +96,13 @@ MAX_FRAMES="${MAX_FRAMES:-33}"   # 论文值 33 勿改;仅 80GB 卡 OOM 排障
+ EPOCHS="${EPOCHS:-5}"
+ ACCUM="${ACCUM:-4}"
+ LR="1e-4"
++# 训练成本硬门。0=不截断；正整数会被 train_lora 原样转成
++# train.py --max_train_samples，并进入 checkpoint/run_manifest 身份。
++MAX_TRAIN_SAMPLES="${MAX_TRAIN_SAMPLES:-0}"
++if ! [[ "$MAX_TRAIN_SAMPLES" =~ ^[0-9]+$ ]]; then
++    echo "FATAL: MAX_TRAIN_SAMPLES=$MAX_TRAIN_SAMPLES 非法（应为 0 或正整数）" >&2
++    exit 1
++fi
+ 
+ # ---- 规模档位 ----
+ # =============================================================================
+@@ -217,13 +224,18 @@ sha_stamp()    { printf '%s\n' "$2" > "$1"; echo "[stamp] $(basename "$1") ← $
+ # 于是 36 号虽然显式 POSE_MODE=identity,仍继承了 headline_eligible=true。
+ # 与 run_manifest.py 的 _NEVER_HEADLINE_ROLES 保持同一名单(改一处必须改两处;
+ # test_pose_timeline.py 有一条用例钉住二者一致)。
+-_RSWM_NEVER_HEADLINE_ROLES="diagnostic_stationary probe_gate legacy variant_attribution ladder"
++_RSWM_NEVER_HEADLINE_ROLES="diagnostic_stationary probe_gate legacy variant_attribution ladder trivial_baseline metric_calibration submission_scoring"
+ _role_never_headline() {
+     case " $_RSWM_NEVER_HEADLINE_ROLES " in *" $1 "*) return 0 ;; *) return 1 ;; esac
+ }
+ _headline_eligible_for() {
+     local _pm="$1" _rl="${2:-}"
+     if [ -n "$_rl" ] && _role_never_headline "$_rl"; then echo 0; return; fi
++    if [ "${RSWM_PROFILE:-unset}" = "official" ] && \
++       { [ "${RSWM_PROMPT_SCHEMA:-}" != "net_continuous" ] || \
++         [ "${RSWM_PATH_ESTIMATOR:-}" != "registration" ]; }; then
++        echo 0; return
++    fi
+     if [ "${RSWM_PROFILE_ELIGIBLE:-0}" = "1" ] && [ "$_pm" != "identity" ]; then
+         echo 1
+     else
+@@ -235,6 +247,11 @@ _headline_reason_for() {
+     if [ -n "$_rl" ] && _role_never_headline "$_rl"; then
+         echo "role=$_rl 属诊断/判门/legacy,不入 headline"; return
+     fi
++    if [ "${RSWM_PROFILE:-unset}" = "official" ] && \
++       { [ "${RSWM_PROMPT_SCHEMA:-}" != "net_continuous" ] || \
++         [ "${RSWM_PATH_ESTIMATOR:-}" != "registration" ]; }; then
++        echo "official 主通路要求 prompt_schema=net_continuous 且 path_estimator=registration"; return
++    fi
+     if [ "${RSWM_PROFILE_ELIGIBLE:-0}" != "1" ]; then
+         echo "${RSWM_HEADLINE_INELIGIBLE_REASON:-profile 不合格}"
+     elif [ "$_pm" = "identity" ]; then
+@@ -303,6 +320,19 @@ train_lora() {
+             echo "[train:$tag] 检测到断点 $(basename "$latest_ckpt") → 自动 --resume_from 续训"
+         fi
+     fi
++    local train_cap_flag=()
++    if [ "$MAX_TRAIN_SAMPLES" -gt 0 ]; then
++        train_cap_flag=(--max_train_samples "$MAX_TRAIN_SAMPLES")
++        echo "[train:$tag] MAX_TRAIN_SAMPLES=$MAX_TRAIN_SAMPLES（确定性成本硬门）"
++    fi
++    local split_file_flag=()
++    if [ -n "${TRAIN_SPLIT_FILE:-}" ]; then
++        [ -f "$TRAIN_SPLIT_FILE" ] || {
++            echo "FATAL: TRAIN_SPLIT_FILE 不存在: $TRAIN_SPLIT_FILE" >&2; exit 1;
++        }
++        split_file_flag=(--split_file "$TRAIN_SPLIT_FILE")
++        echo "[train:$tag] 使用预注册 split: $TRAIN_SPLIT_FILE"
++    fi
+     ( cd "$NEW" && RSWM_RUN_ROLE="$_role" $PY train.py \
+         --checkpoint_dir "$CHECKPOINT_DIR" \
+         --data_path "$data" \
+@@ -314,6 +344,8 @@ train_lora() {
+         --split_seed "${SPLIT_SEED:-42}" \
+         --lora_targets "${LORA_TARGETS:-all}" \
+         --pose_mode "$_TRAIN_PM" \
++        "${train_cap_flag[@]}" \
++        "${split_file_flag[@]}" \
+         "${resume_flag[@]}" \
+         "${TRAIN_OFFLOAD_FLAG[@]}" \
+     ) 2>&1 | tee -a "$LOGS/train_${tag}.log"
+@@ -431,8 +463,17 @@ aligned() {
+ #
+ # 默认值全部 = 旧行为，改动是显式的。
+ # =============================================================================
+-export RSWM_PROMPT_SCHEMA="${RSWM_PROMPT_SCHEMA:-net}"
+-export RSWM_PATH_ESTIMATOR="${RSWM_PATH_ESTIMATOR:-flow}"
++# 正式 ICLR 通路默认连续角 prompt + registration；legacy 复现实验保留
++# 四方向词 + flow。这样正式作业不再依赖 qsub -V 或交互 shell 的临时 export。
++if [ "$RSWM_PROFILE" = "official" ]; then
++    _RSWM_DEFAULT_PROMPT_SCHEMA=net_continuous
++    _RSWM_DEFAULT_PATH_ESTIMATOR=registration
++else
++    _RSWM_DEFAULT_PROMPT_SCHEMA=net
++    _RSWM_DEFAULT_PATH_ESTIMATOR=flow
++fi
++export RSWM_PROMPT_SCHEMA="${RSWM_PROMPT_SCHEMA:-$_RSWM_DEFAULT_PROMPT_SCHEMA}"
++export RSWM_PATH_ESTIMATOR="${RSWM_PATH_ESTIMATOR:-$_RSWM_DEFAULT_PATH_ESTIMATOR}"
+ export RSWM_BACKBONE="${RSWM_BACKBONE:-wan-inline}"
+ case "$RSWM_PROMPT_SCHEMA" in
+     net|net_continuous|per_segment_continuous|stripped) ;;
+@@ -446,6 +487,13 @@ esac
+ echo "[common] ROOT=$ROOT"
+ echo "[common] WORK=$WORK  CKPT=$CHECKPOINT_DIR"
+ echo "[rsroll] prompt_schema=$RSWM_PROMPT_SCHEMA  path_estimator=$RSWM_PATH_ESTIMATOR  backbone=$RSWM_BACKBONE"
++if [ "$RSWM_PROFILE" = "official" ] && { \
++        [ "$RSWM_PROMPT_SCHEMA" != "net_continuous" ] || \
++        [ "$RSWM_PATH_ESTIMATOR" != "registration" ]; }; then
++    export RSWM_HEADLINE_ELIGIBLE=0
++    export RSWM_HEADLINE_INELIGIBLE_REASON="official 主通路要求 prompt=net_continuous 且 estimator=registration"
++    echo "[rsroll] ⚠️ official 口径被覆盖：产物不得作为 headline。" >&2
++fi
+ if [ "$RSWM_PROMPT_SCHEMA" = "net" ] && [ "$RSWM_PATH_ESTIMATOR" = "flow" ]; then
+     echo "[rsroll] ⚠️ 当前是**旧口径**(4 词方向 + 光流估计器)。"
+     echo "[rsroll]    要跑本文主通路：export RSWM_PROMPT_SCHEMA=net_continuous RSWM_PATH_ESTIMATOR=registration"
+diff --git "a/modified\\rswm_server_pack/server_run/evaluate_rollout_protocol.py" "b/modified\\rswm_server_pack/server_run/evaluate_rollout_protocol.py"
+new file mode 100644
+index 0000000..cb85389
+--- /dev/null
++++ "b/modified\\rswm_server_pack/server_run/evaluate_rollout_protocol.py"
+@@ -0,0 +1,335 @@
++#!/usr/bin/env python3
++"""Paper-protocol evaluator for overlap robustness and rollout horizon.
++
++The overlap axis is deliberately ``condition t=0 -> future t``.  Adjacent-frame
++overlap is reported separately as a continuity audit; asking every adjacent pair
++to have 5% overlap would turn a video rollout into disconnected image jumps.
++
++This tool only computes paired/framewise metrics.  FID and FVD remain sample-level
++distribution metrics in the official scorer and ``recompute_fvd_i3d.py``; treating
++correlated frames inside a tiny overlap bin as independent samples would inflate N.
++"""
++from __future__ import annotations
++
++import argparse
++import json
++import math
++import sys
++from pathlib import Path
++
++import h5py
++import numpy as np
++
++ROOT = Path(__file__).resolve().parent.parent
++NEW = ROOT / "lora_remotesense" / "new"
++sys.path.insert(0, str(NEW))
++
++from metrics import compute_ssim, compute_psnr  # noqa: E402
++from submission_contract import (  # noqa: E402
++    CONDITION_FRAMES, assert_id_set, assert_same_shape,
++)
++from step_overlap import overlap_from_centers, step_overlaps  # noqa: E402
++
++BIN_SPECS = (
++    ("dense_80", 0.65, 1.0, 80),
++    ("sparse_50", 0.40, 0.65, 50),
++    ("sparse_30", 0.20, 0.40, 30),
++    ("sparse_10", 0.075, 0.20, 10),
++    ("sparse_05", 0.0, 0.075, 5),
++)
++HORIZONS = (17, 25, 33)
++
++
++def assign_overlap_bin(value: float) -> str:
++    v = float(value)
++    if not (0.0 <= v <= 1.0):
++        raise ValueError(f"overlap out of range: {v}")
++    for name, lo, hi, _anchor in BIN_SPECS:
++        if lo <= v < hi or (hi == 1.0 and v == 1.0):
++            return name
++    raise AssertionError(f"no overlap bin for {v}")
++
++
++def _mean(values):
++    return float(np.mean(values)) if values else None
++
++
++def summarize_rows(rows: list[dict]) -> dict:
++    return {
++        "n_frames": len(rows),
++        "n_samples": len({r["sample_id"] for r in rows}),
++        "SSIM": _mean([r["SSIM"] for r in rows]),
++        "PSNR": _mean([r["PSNR"] for r in rows]),
++        "condition_overlap_mean": _mean([r["condition_overlap"] for r in rows]),
++        "condition_overlap_min": (min(r["condition_overlap"] for r in rows)
++                                  if rows else None),
++        "condition_overlap_max": (max(r["condition_overlap"] for r in rows)
++                                  if rows else None),
++    }
++
++
++def flow_vector_consistency(gen: np.ndarray, gt: np.ndarray,
++                            window_size: tuple[int, int]) -> dict:
++    """Farneback global-motion agreement, a 2D geometry/control *proxy*.
++
++    This is not depth, pose recovery, or proof of explicit 3D awareness.  It asks
++    only whether generated inter-frame content motion agrees with GT motion.
++    """
++    from trajectory_metrics import _maybe_downsample, _compute_flows, _step_vector
++    assert_same_shape(gen, gt, what="flow consistency video")
++    g = _maybe_downsample(gen, window_size)
++    r = _maybe_downsample(gt, window_size)
++    gf, rf = _compute_flows(g), _compute_flows(r)
++    if gf is None or rf is None or len(gf) != len(rf):
++        return {"available": False, "n_steps": 0}
++    angles, rel_mag, rel_epe = [], [], []
++    live_gen = live_gt = 0
++    eps = 1e-6
++    for a, b in zip(gf, rf):
++        gv = np.asarray(_step_vector(a)[:2], dtype=np.float64)
++        rv = np.asarray(_step_vector(b)[:2], dtype=np.float64)
++        gm, rm = float(np.linalg.norm(gv)), float(np.linalg.norm(rv))
++        live_gen += int(gm > eps)
++        live_gt += int(rm > eps)
++        rel_mag.append(abs(gm - rm) / max(rm, eps))
++        rel_epe.append(float(np.linalg.norm(gv - rv)) / max(rm, eps))
++        if gm > eps and rm > eps:
++            cos = float(np.clip(np.dot(gv, rv) / (gm * rm), -1.0, 1.0))
++            angles.append(math.degrees(math.acos(cos)))
++    n = len(gf)
++    return {
++        "available": True,
++        "n_steps": n,
++        "angle_error_deg_mean": _mean(angles),
++        "angle_valid_steps": len(angles),
++        "relative_magnitude_error_mean": _mean(rel_mag),
++        "relative_vector_epe_mean": _mean(rel_epe),
++        "generated_liveness_rate": live_gen / n if n else None,
++        "gt_liveness_rate": live_gt / n if n else None,
++        "claim_guard": "2D optical-flow consistency proxy; not explicit 3D geometry",
++    }
++
++
++def load_split_indices(path: str | None, name: str) -> list[int] | None:
++    if not path:
++        return None
++    doc = json.loads(Path(path).read_text(encoding="utf-8"))
++    old = f"{name}_indices"
++    if old in doc:
++        return [int(i) for i in doc[old]]
++    try:
++        return [int(i) for i in doc["splits"][name]["indices"]]
++    except (KeyError, TypeError) as e:
++        raise ValueError(f"{path}: missing {old} or splits.{name}.indices") from e
++
++
++def _scene_size(group, meta) -> tuple[int, int]:
++    if "full_scene" in group:
++        return tuple(int(v) for v in group["full_scene"].shape[:2])
++    if "full_scene_size" in meta:
++        return tuple(int(v) for v in meta["full_scene_size"])
++    raise ValueError("H5 has neither per-sample full_scene nor metadata.full_scene_size")
++
++
++def evaluate(args) -> dict:
++    eval_dir = Path(args.eval_dir)
++    gen_dir = eval_dir / "generated"
++    if not gen_dir.is_dir():
++        raise FileNotFoundError(f"missing {gen_dir}")
++    manifest_path = eval_dir / "run_manifest.json"
++    manifest = (json.loads(manifest_path.read_text(encoding="utf-8"))
++                if manifest_path.is_file() else None)
++    if not args.allow_nonheadline:
++        if not manifest or manifest.get("headline_eligible") is not True \
++                or manifest.get("manifest_override"):
++            raise RuntimeError(
++                f"{eval_dir}: missing/ineligible/overridden run_manifest; "
++                f"use --allow-nonheadline only for diagnostics")
++
++    with h5py.File(args.gt_h5, "r") as f:
++        data = f["data"] if "data" in f else f
++        keys = sorted(data.keys())
++        indices = load_split_indices(args.split_file, args.split_name)
++        if indices is None:
++            wanted = sorted(p.stem for p in gen_dir.glob("*.npy"))
++            unknown = sorted(set(wanted) - set(keys))
++            if unknown:
++                raise KeyError(f"generated IDs absent from H5: {unknown[:5]}")
++        else:
++            bad = [i for i in indices if i < 0 or i >= len(keys)]
++            if bad:
++                raise IndexError(f"split indices out of range: {bad[:5]}")
++            wanted = [keys[i] for i in indices]
++            if args.max_samples:
++                wanted = wanted[:args.max_samples]
++        submitted = sorted(p.stem for p in gen_dir.glob("*.npy"))
++        assert_id_set(submitted, wanted, what="rollout protocol evaluation")
++
++        meta = dict(f["metadata"].attrs) if "metadata" in f else {}
++        if "pose_window_size" not in meta:
++            raise ValueError("H5 metadata.pose_window_size is required")
++        win = tuple(int(v) for v in meta["pose_window_size"])
++        rows: list[dict] = []
++        sample_flow: dict[str, dict] = {}
++        adjacent_all = []
++        for n, key in enumerate(wanted, 1):
++            group = data[key]
++            if "trajectory" not in group:
++                raise ValueError(f"{key}: missing trajectory")
++            gt = np.asarray(group["video_frames"][:])
++            gen = np.load(gen_dir / f"{key}.npy")
++            if gen.dtype != np.uint8:
++                if not np.all(np.isfinite(gen)):
++                    raise ValueError(f"{key}: generated video contains NaN/Inf")
++                gen = np.clip(gen, 0, 255).astype(np.uint8)
++            gt = np.clip(gt, 0, 255).astype(np.uint8)
++            assert_same_shape(gen, gt, what="rollout protocol video", key=key)
++            traj = np.asarray(group["trajectory"][:], dtype=np.float64)
++            if len(traj) != len(gt):
++                raise ValueError(f"{key}: trajectory T={len(traj)} != video T={len(gt)}")
++            scene_hw = _scene_size(group, meta)
++            adj = step_overlaps(traj, win, scene_hw)
++            adjacent_all.extend(adj)
++            for t in range(CONDITION_FRAMES, len(gt)):
++                ov = overlap_from_centers(traj[0], traj[t], win, scene_hw)
++                rows.append({
++                    "sample_id": key,
++                    "t": t,
++                    "clip_frames": len(gt),
++                    "condition_overlap": float(ov),
++                    "overlap_bin": assign_overlap_bin(ov),
++                    "SSIM": float(compute_ssim(gen[t], gt[t])),
++                    "PSNR": float(compute_psnr(gen[t], gt[t])),
++                })
++            sample_flow[key] = flow_vector_consistency(gen, gt, win)
++            if args.verbose and n % 25 == 0:
++                print(f"  ... {n}/{len(wanted)}")
++
++    by_overlap = {}
++    for name, lo, hi, anchor in BIN_SPECS:
++        rr = [r for r in rows if r["overlap_bin"] == name]
++        by_overlap[name] = {
++            "anchor_pct": anchor,
++            "interval": [lo, hi],
++            "interval_semantics": "[lo,hi), except 1.0 included in dense_80",
++            **summarize_rows(rr),
++        }
++    per_frame = {}
++    for t in sorted({r["t"] for r in rows}):
++        per_frame[str(t)] = summarize_rows([r for r in rows if r["t"] == t])
++    prefix = {}
++    exact = {}
++    for h in HORIZONS:
++        eligible = {r["sample_id"] for r in rows if r["clip_frames"] >= h}
++        prefix[str(h)] = summarize_rows([
++            r for r in rows if r["sample_id"] in eligible and r["t"] < h])
++        exact[str(h)] = summarize_rows([
++            r for r in rows if r["clip_frames"] == h])
++    flow_available = [v for v in sample_flow.values() if v.get("available")]
++    flow_agg = {
++        "n_samples": len(sample_flow),
++        "n_available": len(flow_available),
++        "angle_error_deg_mean": _mean([
++            v["angle_error_deg_mean"] for v in flow_available
++            if v.get("angle_error_deg_mean") is not None]),
++        "relative_magnitude_error_mean": _mean([
++            v["relative_magnitude_error_mean"] for v in flow_available]),
++        "relative_vector_epe_mean": _mean([
++            v["relative_vector_epe_mean"] for v in flow_available]),
++        "generated_liveness_rate": _mean([
++            v["generated_liveness_rate"] for v in flow_available]),
++        "gt_liveness_rate": _mean([
++            v["gt_liveness_rate"] for v in flow_available]),
++        "claim_guard": "2D optical-flow consistency proxy; not explicit 3D geometry",
++    }
++    return {
++        "schema": "rswm.rollout_protocol_results/v1",
++        "task": "continuous trajectory-conditioned spatial video rollout",
++        "not_temporal_forecasting": True,
++        "gt_h5": str(Path(args.gt_h5).resolve()),
++        "eval_dir": str(eval_dir.resolve()),
++        "split_file": str(Path(args.split_file).resolve()) if args.split_file else None,
++        "split_name": args.split_name,
++        "run_manifest": manifest,
++        "headline_eligible": bool(manifest and manifest.get("headline_eligible") is True
++                                  and not manifest.get("manifest_override")),
++        "condition_frames_excluded": CONDITION_FRAMES,
++        "n_samples": len(wanted),
++        "n_predicted_frames": len(rows),
++        "overlap_definition": "area overlap(condition frame t=0, predicted frame t)",
++        "overlap_bins": by_overlap,
++        "adjacent_step_overlap_audit": {
++            "definition": "area overlap(frame t-1, frame t)",
++            "n_steps": len(adjacent_all),
++            "min": min(adjacent_all) if adjacent_all else None,
++            "median": float(np.median(adjacent_all)) if adjacent_all else None,
++            "mean": _mean(adjacent_all),
++            "max": max(adjacent_all) if adjacent_all else None,
++            "note": "continuity audit only; never substituted for condition overlap bins",
++        },
++        "horizon": {
++            "total_frames_include_one_condition_frame": True,
++            "prefix_aggregate": prefix,
++            "exact_length_cohorts": exact,
++            "per_frame_curve": per_frame,
++        },
++        "flow_vector_consistency": flow_agg,
++        "per_sample_flow": sample_flow,
++        "distribution_metrics_note": (
++            "FID/FVD are intentionally not recomputed per overlap frame-bin; use "
++            "the official scorer and recompute_fvd_i3d.py at sample level."),
++    }
++
++
++def self_test() -> int:
++    checks = []
++    def ck(name, cond):
++        checks.append(bool(cond)); print(f"[{'PASS' if cond else 'FAIL'}] {name}")
++    ck("bin_100", assign_overlap_bin(1.0) == "dense_80")
++    ck("bin_80", assign_overlap_bin(.80) == "dense_80")
++    ck("bin_50", assign_overlap_bin(.50) == "sparse_50")
++    ck("bin_30", assign_overlap_bin(.30) == "sparse_30")
++    ck("bin_10", assign_overlap_bin(.10) == "sparse_10")
++    ck("bin_05", assign_overlap_bin(.05) == "sparse_05")
++    ck("bin_0", assign_overlap_bin(0.0) == "sparse_05")
++    rows = [
++        {"sample_id": "a", "SSIM": .5, "PSNR": 20., "condition_overlap": .8},
++        {"sample_id": "a", "SSIM": .7, "PSNR": 22., "condition_overlap": .5},
++        {"sample_id": "b", "SSIM": .6, "PSNR": 21., "condition_overlap": .3},
++    ]
++    s = summarize_rows(rows)
++    ck("aggregate_sample_unit", s["n_frames"] == 3 and s["n_samples"] == 2)
++    ck("aggregate_known_answer", abs(s["SSIM"] - .6) < 1e-12)
++    # Geometry primitive known answer: horizontal half-window shift -> 50% overlap.
++    ck("overlap_known_answer",
++       abs(overlap_from_centers((100, 100), (100, 150), (100, 100)) - .5) < 1e-12)
++    return 0 if all(checks) else 7
++
++
++def main(argv=None) -> int:
++    ap = argparse.ArgumentParser(description=__doc__)
++    ap.add_argument("--gt-h5")
++    ap.add_argument("--eval-dir")
++    ap.add_argument("--split-file")
++    ap.add_argument("--split-name", choices=("train", "val", "test"), default="val")
++    ap.add_argument("--max-samples", type=int)
++    ap.add_argument("--allow-nonheadline", action="store_true")
++    ap.add_argument("--verbose", action="store_true")
++    ap.add_argument("-o", "--output", default="rollout_protocol_results.json")
++    ap.add_argument("--self-test", action="store_true")
++    args = ap.parse_args(argv)
++    if args.self_test:
++        return self_test()
++    if not args.gt_h5 or not args.eval_dir:
++        ap.error("--gt-h5 and --eval-dir are required")
++    result = evaluate(args)
++    out = Path(args.output)
++    out.parent.mkdir(parents=True, exist_ok=True)
++    out.write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
++    print(f"[PASS] {result['n_samples']} samples / "
++          f"{result['n_predicted_frames']} predicted frames -> {out}")
++    return 0
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git "a/modified\\rswm_server_pack/server_run/iclr_experiment_matrix.json" "b/modified\\rswm_server_pack/server_run/iclr_experiment_matrix.json"
+new file mode 100644
+index 0000000..d5fb010
+--- /dev/null
++++ "b/modified\\rswm_server_pack/server_run/iclr_experiment_matrix.json"
+@@ -0,0 +1,87 @@
++{
++  "schema": "rswm.iclr_experiment_matrix/v1",
++  "task": {
++    "name": "Continuous Trajectory-conditioned Remote Sensing Video Rollout",
++    "prediction_semantics": "spatial camera rollout from one observed frame",
++    "not_claimed": "future temporal dynamics prediction",
++    "backbone": "Wan/LingBot I2V Video DiT",
++    "condition_frames": 1,
++    "fidelity_scope": "predicted_frames_only"
++  },
++  "protocol": {
++    "profile": "official",
++    "prompt_schema": "net_continuous",
++    "path_estimator": "registration",
++    "dataset_tier": "aid",
++    "pose_mode": "native",
++    "split_policy": "source-disjoint train/val/test; hidden test excluded from training",
++    "seeds": [42, 43, 44],
++    "headline_eval_n": 400,
++    "distribution_metric_min_n": 32
++  },
++  "adaptation": {
++    "primary": {
++      "kind": "lora",
++      "rank": 16,
++      "alpha": 16,
++      "targets": "all"
++    },
++    "frozen_baseline": {
++      "kind": "frozen",
++      "runner": "evaluate_baseline.py",
++      "runnable": true
++    },
++    "rank_sweep": {
++      "ranks": [4, 8, 16, 32, 64],
++      "alpha_rule": "alpha_equals_rank",
++      "targets": "all",
++      "seed": 42
++    },
++    "target_ablation": {
++      "rank": 16,
++      "alpha": 16,
++      "targets": ["attn_only", "attn_cam", "all"],
++      "seed": 42
++    },
++    "full_finetuning": {
++      "kind": "full",
++      "runnable": false,
++      "status": "not_implemented",
++      "reason": "two 14B experts require a separately validated FSDP/ZeRO recipe; the current LoRA optimizer/offload path is not a valid full-FT baseline"
++    }
++  },
++  "benchmark_tracks": {
++    "overlap_curve": {
++      "definition": "overlap(condition frame t=0, predicted frame t)",
++      "anchors_pct": [80, 50, 30, 10, 5],
++      "edges_pct": [100, 65, 40, 20, 7.5, 0],
++      "adjacent_step_overlap": "reported separately as a continuity audit; never conflated with condition overlap"
++    },
++    "long_horizon": {
++      "frame_counts": [17, 25, 33],
++      "definition": "total clip frames including one condition frame",
++      "report": ["per_frame_curve", "prefix_aggregate", "exact_length_cohorts"]
++    },
++    "generalization": {
++      "train": "aid",
++      "test_only": ["whurs19", "resisc45"],
++      "cross_dataset_duplicate_gate": true,
++      "note": "no retraining on target tier in the cross-domain table"
++    }
++  },
++  "metrics": {
++    "fidelity": ["SSIM", "PSNR", "LPIPS", "FID"],
++    "video_distribution": ["FVD_I3D"],
++    "control_geometry_proxies": [
++      "net_direction_error",
++      "segment_angular_mean",
++      "turn_recall",
++      "turn_precision",
++      "waypoint_error",
++      "frechet",
++      "dtw",
++      "flow_magnitude"
++    ],
++    "claim_guard": "optical-flow/registration trajectory metrics are geometry-consistency proxies, not proof of explicit 3D geometry awareness"
++  }
++}
+diff --git "a/modified\\rswm_server_pack/server_run/iclr_matrix.py" "b/modified\\rswm_server_pack/server_run/iclr_matrix.py"
+new file mode 100644
+index 0000000..cc0f553
+--- /dev/null
++++ "b/modified\\rswm_server_pack/server_run/iclr_matrix.py"
+@@ -0,0 +1,181 @@
++#!/usr/bin/env python3
++"""Validate and materialize the preregistered ICLR LoRA experiment matrix.
++
++This planner is CPU-only and never launches training.  It emits one JSON plan whose
++entries map directly to ``common.sh::train_lora``.  Expensive execution remains an
++explicit, separate cluster action.
++"""
++from __future__ import annotations
++
++import argparse
++import json
++import hashlib
++from pathlib import Path
++
++SCHEMA = "rswm.iclr_experiment_matrix/v1"
++RANKS = [4, 8, 16, 32, 64]
++TARGETS = ["attn_only", "attn_cam", "all"]
++
++
++def load_and_validate(path: str | Path) -> dict:
++    p = Path(path)
++    doc = json.loads(p.read_text(encoding="utf-8"))
++    errors = []
++    if doc.get("schema") != SCHEMA:
++        errors.append(f"schema must be {SCHEMA!r}")
++    protocol = doc.get("protocol", {})
++    if protocol.get("profile") != "official":
++        errors.append("protocol.profile must be official")
++    if protocol.get("prompt_schema") != "net_continuous":
++        errors.append("official prompt_schema must be net_continuous")
++    if protocol.get("path_estimator") != "registration":
++        errors.append("official path_estimator must be registration")
++    task = doc.get("task", {})
++    if task.get("condition_frames") != 1:
++        errors.append("condition_frames must be exactly 1")
++    if task.get("fidelity_scope") != "predicted_frames_only":
++        errors.append("fidelity_scope must be predicted_frames_only")
++    ad = doc.get("adaptation", {})
++    if ad.get("rank_sweep", {}).get("ranks") != RANKS:
++        errors.append(f"rank_sweep.ranks must be {RANKS}")
++    if ad.get("target_ablation", {}).get("targets") != TARGETS:
++        errors.append(f"target_ablation.targets must be {TARGETS}")
++    ov = doc.get("benchmark_tracks", {}).get("overlap_curve", {})
++    if ov.get("anchors_pct") != [80, 50, 30, 10, 5]:
++        errors.append("overlap anchors must be [80,50,30,10,5]")
++    if "condition frame" not in ov.get("definition", ""):
++        errors.append("overlap must be defined against the condition frame")
++    if doc.get("benchmark_tracks", {}).get("long_horizon", {}).get(
++            "frame_counts") != [17, 25, 33]:
++        errors.append("long-horizon frame_counts must be [17,25,33]")
++    if errors:
++        raise ValueError("invalid ICLR matrix:\n  - " + "\n  - ".join(errors))
++    return doc
++
++
++def materialize(doc: dict) -> list[dict]:
++    p = doc["protocol"]
++    common = {
++        "dataset_tier": p["dataset_tier"],
++        "profile": p["profile"],
++        "prompt_schema": p["prompt_schema"],
++        "path_estimator": p["path_estimator"],
++        "pose_mode": p["pose_mode"],
++        "split_seed": 42,
++        "eval_n": p["headline_eval_n"],
++    }
++    runs = []
++    rs = doc["adaptation"]["rank_sweep"]
++    for rank in rs["ranks"]:
++        runs.append({
++            **common,
++            "id": f"rank_r{rank}_{rs['targets']}_s{rs['seed']}",
++            "family": "rank_sweep",
++            "adaptation": "lora",
++            "rank": rank,
++            "alpha": rank,
++            "targets": rs["targets"],
++            "train_seed": rs["seed"],
++        })
++    ta = doc["adaptation"]["target_ablation"]
++    for target in ta["targets"]:
++        # r16/attn_cam is already in the rank sweep; keep one canonical run ID.
++        if target == rs["targets"] and ta["rank"] in rs["ranks"]:
++            continue
++        runs.append({
++            **common,
++            "id": f"target_r{ta['rank']}_{target}_s{ta['seed']}",
++            "family": "target_ablation",
++            "adaptation": "lora",
++            "rank": ta["rank"],
++            "alpha": ta["alpha"],
++            "targets": target,
++            "train_seed": ta["seed"],
++        })
++    # Primary configuration gets two extra seeds for mean±std.
++    primary = doc["adaptation"]["primary"]
++    for seed in p["seeds"]:
++        if seed == rs["seed"]:
++            continue
++        runs.append({
++            **common,
++            "id": f"primary_r{primary['rank']}_{primary['targets']}_s{seed}",
++            "family": "primary_multiseed",
++            "adaptation": "lora",
++            "rank": primary["rank"],
++            "alpha": primary["alpha"],
++            "targets": primary["targets"],
++            "train_seed": seed,
++        })
++    runs.append({
++        **common,
++        "id": "frozen_base_s42",
++        "family": "baseline",
++        "adaptation": "frozen",
++        "train_seed": None,
++        "rank": None,
++        "alpha": None,
++        "targets": None,
++    })
++    full = doc["adaptation"]["full_finetuning"]
++    runs.append({
++        **common,
++        "id": "full_ft_unavailable",
++        "family": "baseline",
++        "adaptation": "full",
++        "runnable": False,
++        "status": full["status"],
++        "reason": full["reason"],
++        "train_seed": 42,
++        "rank": None,
++        "alpha": None,
++        "targets": None,
++    })
++    for run in runs:
++        run.setdefault("runnable", True)
++    ids = [r["id"] for r in runs]
++    if len(ids) != len(set(ids)):
++        raise AssertionError("materialized run IDs are not unique")
++    return runs
++
++
++def sha256_file(path: str | Path) -> str:
++    h = hashlib.sha256()
++    with Path(path).open("rb") as f:
++        for block in iter(lambda: f.read(1 << 20), b""):
++            h.update(block)
++    return h.hexdigest()
++
++
++def main(argv=None) -> int:
++    here = Path(__file__).resolve().parent
++    ap = argparse.ArgumentParser(description=__doc__)
++    ap.add_argument("--matrix", default=str(here / "iclr_experiment_matrix.json"))
++    ap.add_argument("-o", "--output")
++    ap.add_argument("--check-only", action="store_true")
++    args = ap.parse_args(argv)
++    doc = load_and_validate(args.matrix)
++    runs = materialize(doc)
++    source = Path(args.matrix).resolve()
++    out = {
++        "schema": "rswm.iclr_execution_plan/v1",
++        "source_matrix": str(source),
++        "source_matrix_sha256": sha256_file(source),
++        "n_runs": len(runs),
++        "n_runnable": sum(bool(r["runnable"]) for r in runs),
++        "runs": runs,
++    }
++    print(f"[PASS] matrix valid; {out['n_runnable']}/{out['n_runs']} runs runnable")
++    for r in runs:
++        state = "RUN" if r["runnable"] else "BLOCKED"
++        print(f"  [{state:7}] {r['id']}")
++    if args.output and not args.check_only:
++        op = Path(args.output)
++        op.parent.mkdir(parents=True, exist_ok=True)
++        op.write_text(json.dumps(out, indent=2, ensure_ascii=False), encoding="utf-8")
++        print(f"[write] {op}")
++    return 0
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git "a/original\\rswm_server_pack/server_run/pbs/01_build_data.pbs" "b/modified\\rswm_server_pack/server_run/pbs/01_build_data.pbs"
+index 36219fd..537af49 100644
+--- "a/original\\rswm_server_pack/server_run/pbs/01_build_data.pbs"
++++ "b/modified\\rswm_server_pack/server_run/pbs/01_build_data.pbs"
+@@ -103,18 +103,21 @@ if ! sha_stamp_ok "$STAMPS/p1_semgate.sha256" "$GEO_SHA"; then
+     sha_stamp "$STAMPS/p1_semgate.sha256" "$GEO_SHA"
+ fi
+ 
+-# --- 门 2 [v2.4.3 修 P1]:train/val 泄漏门进自动链(预生成确定性 split) ---
+-# split 对 (total, split_seed=42) 完全确定,不必等 job20;此门 FAIL 时本作业
+-# 非零退出,20-31 一个都提交不进 —— "三道绿灯"的第三道从此在编排里强制。
++# --- 门 2 [ICLR]:source-disjoint train/val/test + 泄漏门进自动链 ---
++# 旧 precheck 是索引随机 80/20，只能复刻训练器，不能阻止同一源图跨划分。
++# official split 先按源身份并查集分组再分配 70/10/20；训练器直接读取它，
++# hidden test 永不进入 train/val。内容/源身份泄漏门把 val+test 合并为 holdout。
+ if ! sha_stamp_ok "$STAMPS/p1_splitgate.sha256" "$GEO_SHA"; then
+     _rc=0
+-    $PY "$ROOT/server_run/make_precheck_split.py" --gt-h5 "$GEO_H5" \
+-        -o "$WORK/train_val_split_precheck.json" \
++    $PY "$ROOT/server_run/make_official_splits.py" --gt-h5 "$GEO_H5" \
++        --seed "${SPLIT_SEED:-42}" \
++        -o "$WORK/official_splits.json" \
++        --emit-trainval "$WORK/official_trainval.json" \
+         2>&1 | tee "$LOGS/p1_splitgen.log" || _rc=$?
+     if [ "$_rc" -eq 0 ]; then
+         $PY "$ROOT/server_run/check_benchmark_duplicates.py" \
+             --gt-h5 "$GEO_H5" \
+-            --split "$WORK/train_val_split_precheck.json" \
++            --split "$WORK/official_splits.json" \
+             -o "$WORK/duplicate_report_split.json" \
+             2>&1 | tee "$LOGS/p1_splitcheck.log" || _rc=$?
+     fi
+@@ -169,6 +172,8 @@ def sha_of(p):
+ tgt = {
+     "geo_h5_sha256": geo_sha,
+     "probe_h5_sha256": probe_sha,
++    "official_splits_sha256": sha_of(w / "official_splits.json"),
++    "official_trainval_sha256": sha_of(w / "official_trainval.json"),
+     "semgate_attempts_sha256": sha_of(w / "semgate_attempts.json"),
+     "overlap_audit_sha256": sha_of(w / "overlap_audit.json"),
+     "probe_overlap_audit_sha256": sha_of(w / "probe34" / "overlap_audit.json"),
+@@ -187,6 +192,5 @@ if [ "${KEEP_TMP_BENCH:-0}" != "1" ]; then
+     rm -rf "$WORK/tmp_bench_main" 2>/dev/null || true
+ fi
+ echo "[ok] build 完成(重复门+split 泄漏门 PASS): $GEO_H5 / $SEM_H5"
+-echo "     job20 产出真 split 后请跑一次同源性比对(防 RNG 漂移):"
+-echo "     $PY server_run/make_precheck_split.py --gt-h5 $GEO_H5 \\"
+-echo "         --verify-against \$WORK/train_r16_sem_s42/train_val_split.json"
++echo "     预注册划分: $WORK/official_splits.json"
++echo "     official 作业通过 TRAIN_SPLIT_FILE 复用，hidden test 不进训练器。"
+diff --git "a/original\\rswm_server_pack/server_run/pbs/34a_learnability_drop.pbs" "b/modified\\rswm_server_pack/server_run/pbs/34a_learnability_drop.pbs"
+index 5db70c7..b4498cb 100644
+--- "a/original\\rswm_server_pack/server_run/pbs/34a_learnability_drop.pbs"
++++ "b/modified\\rswm_server_pack/server_run/pbs/34a_learnability_drop.pbs"
+@@ -48,7 +48,9 @@ done
+ 
+ # ---- 训练(同主线配方;pose_mode=drop = 真 no-pose 文本臂)----
+ if ! done_p p_probe34a_drop_train; then
+-    POSE_MODE=drop train_lora probe34a_drop 16 16 "$PROBE_H5" "$PROBE_DIR/train_probe34a_drop"
++    # 探针库是独立的 20 条诊断数据，不能套主库 official_splits 的索引。
++    # 清空仅作用于本次函数调用；探针仍写自己的确定性 train_val_split.json。
++    TRAIN_SPLIT_FILE= POSE_MODE=drop train_lora probe34a_drop 16 16 "$PROBE_H5" "$PROBE_DIR/train_probe34a_drop"
+     stamp p_probe34a_drop_train
+ fi
+ 
+diff --git "a/original\\rswm_server_pack/server_run/pbs/34b_learnability_native.pbs" "b/modified\\rswm_server_pack/server_run/pbs/34b_learnability_native.pbs"
+index e401b27..76e2607 100644
+--- "a/original\\rswm_server_pack/server_run/pbs/34b_learnability_native.pbs"
++++ "b/modified\\rswm_server_pack/server_run/pbs/34b_learnability_native.pbs"
+@@ -49,7 +49,8 @@ done
+ 
+ # ---- 训练(同主线配方;pose_mode=drop = 真 no-pose 文本臂)----
+ if ! done_p p_probe34b_native_train; then
+-    POSE_MODE=native train_lora probe34b_native 16 16 "$PROBE_H5" "$PROBE_DIR/train_probe34b_native"
++    # 独立探针库不复用主库 official_splits（索引空间不同）。
++    TRAIN_SPLIT_FILE= POSE_MODE=native train_lora probe34b_native 16 16 "$PROBE_H5" "$PROBE_DIR/train_probe34b_native"
+     stamp p_probe34b_native_train
+ fi
+ 
+diff --git "a/original\\rswm_server_pack/server_run/pbs/51_ladder_train_eval.pbs" "b/modified\\rswm_server_pack/server_run/pbs/51_ladder_train_eval.pbs"
+index 4d4330e..1125afd 100644
+--- "a/original\\rswm_server_pack/server_run/pbs/51_ladder_train_eval.pbs"
++++ "b/modified\\rswm_server_pack/server_run/pbs/51_ladder_train_eval.pbs"
+@@ -78,7 +78,10 @@ from run_manifest import headline_eligible
+ prof = os.environ.get("RSWM_PROFILE", "unset")
+ sem = os.environ.get("SEM_ARM_MODE", "unset")
+ pm = os.environ.get("POSE_MODE", "native")
+-ok, why = headline_eligible(prof, sem, pm, "ladder")
++ok, why = headline_eligible(
++    prof, sem, pm, "ladder",
++    prompt_schema=os.environ.get("RSWM_PROMPT_SCHEMA"),
++    path_estimator=os.environ.get("RSWM_PATH_ESTIMATOR"))
+ print(f"[guard] headline_eligible(profile={prof}, sem_arm={sem}, "
+       f"pose_mode={pm}, role=ladder) = {ok}  reason={why}")
+ if ok:
+@@ -189,7 +192,8 @@ echo "==================================================================="
+ 
+ # ---- 1) 训练 ----
+ if ! done_p "p51_${RID}_train"; then
+-    train_lora "ladder_$RID" "$RANK" "$ALPHA" "$RH5" "$OUT"
++    # 每个 rung 是独立 H5，主库 official_splits 的索引空间不适用。
++    TRAIN_SPLIT_FILE= train_lora "ladder_$RID" "$RANK" "$ALPHA" "$RH5" "$OUT"
+     stamp "p51_${RID}_train"
+ fi
+ SPLIT="$OUT/train_val_split.json"
+diff --git "a/original\\rswm_server_pack/server_run/pbs/_pbs_env.sh" "b/modified\\rswm_server_pack/server_run/pbs/_pbs_env.sh"
+index 7fe59c2..ad472b5 100644
+--- "a/original\\rswm_server_pack/server_run/pbs/_pbs_env.sh"
++++ "b/modified\\rswm_server_pack/server_run/pbs/_pbs_env.sh"
+@@ -51,6 +51,14 @@ cd "$CODE_ROOT"
+ # shellcheck disable=SC1091
+ source "$CODE_ROOT/server_run/common.sh"
+ 
++# corrected/official 链必须复用 01 预注册的 source-disjoint 三路划分。
++# legacy 复现实验不强行切换，以免改变历史数字。这里仅设置默认路径，
++# 真正调用 train_lora 时才检查文件：01/40/50 等建库作业在 split 产生前也会
++# source 本文件，不能被训练专属前置条件误伤。
++if [ "$RSWM_PROFILE" = "official" ]; then
++    export TRAIN_SPLIT_FILE="${TRAIN_SPLIT_FILE:-$WORK/official_splits.json}"
++fi
++
+ # =============================================================================
+ # [v2.9] 语义臂口径由 common.sh 的 RSWM_PROFILE 统一裁决(official→drop /
+ # legacy→identity),这里不再自己设默认值 —— 两处各设一份默认必然会漂移。
+diff --git "a/original\\rswm_server_pack/server_run/pbs/qsub_corrected_rerun.sh" "b/modified\\rswm_server_pack/server_run/pbs/qsub_corrected_rerun.sh"
+index 485ae08..c672832 100644
+--- "a/original\\rswm_server_pack/server_run/pbs/qsub_corrected_rerun.sh"
++++ "b/modified\\rswm_server_pack/server_run/pbs/qsub_corrected_rerun.sh"
+@@ -53,6 +53,11 @@ fi
+ Q() { if [ "$DRYRUN" = "1" ]; then echo "qsub $*" >&2; echo "jobid_$RANDOM"; else qsub "$@"; fi; }
+ # 所有作业继承独立 WORK
+ V="WORK=$WORK"
++# 01 生成预注册 official_splits；训练作业从共享 WORK 自动读取。
++# 若用户显式传了别的 TRAIN_SPLIT_FILE，也必须原样转进 PBS 环境。
++if [ -n "${TRAIN_SPLIT_FILE:-}" ]; then
++  V="$V,TRAIN_SPLIT_FILE=$TRAIN_SPLIT_FILE"
++fi
+ 
+ # 主线三种子(20-25)+ 单种子消融(26-30)+ 单种子归因(32/33,拍板④)
+ # + [v2.8] 35 逐段富文本臂 / 36 真 no-pose 臂(审查致命伤 F2/②的对照)
+@@ -151,6 +156,7 @@ if [ "$_prof" != "official" ] || { [ -n "$_sam" ] && [ "$_sam" != "drop" ]; }; t
+   exit 1
+ fi
+ echo "[编排] profile=official  语义主线=drop(真·text-only)  几何主线=native"
++echo "[编排] source-disjoint split=$WORK/official_splits.json（01 生成，后续训练复用）"
+ 
+ # [v2.9.1 拍板] 判门拆成两个通路,共享 01 建的同一份探针库,**并行**跑。
+ # 两个都 PASS 才放行主矩阵 —— 只让 drop PASS 就解锁全部 native 实验,
+diff --git "a/original\\rswm_server_pack/server_run/recompute_fvd_i3d.py" "b/modified\\rswm_server_pack/server_run/recompute_fvd_i3d.py"
+index f78e157..9dae6a3 100644
+--- "a/original\\rswm_server_pack/server_run/recompute_fvd_i3d.py"
++++ "b/modified\\rswm_server_pack/server_run/recompute_fvd_i3d.py"
+@@ -48,6 +48,12 @@ from pathlib import Path
+ 
+ import numpy as np
+ 
++_CONTRACT_DIR = Path(__file__).resolve().parent.parent / "lora_remotesense" / "new"
++if str(_CONTRACT_DIR) not in sys.path:
++    sys.path.insert(0, str(_CONTRACT_DIR))
++from submission_contract import (CONDITION_FRAMES,
++                                 MIN_SAMPLES_FOR_DISTRIBUTION)
++
+ FEATURE_DIM = 400          # I3D logits 维度(运行时 dummy 前向再次断言)
+ DEFAULT_NUM_FRAMES = 16    # 文献 FVD-16 口径;本仓 clip 最短 17 帧
+ 
+@@ -151,16 +157,20 @@ def frechet_distance(mu1, sigma1, mu2, sigma2) -> dict:
+ 
+ 
+ def clip_first_frames(video: np.ndarray, num_frames: int, name: str) -> np.ndarray:
+-    """(T,H,W,3) uint8 → 前 num_frames 帧。不足即硬错(不许 pad/循环补齐 ——
++    """(T,H,W,3) uint8 → 排除条件帧后取前 num_frames 帧。
++
++    不足即硬错(不许 pad/循环补齐 ——
+     补出来的静止尾巴会系统性拉低时间维方差,FVD 静默失真)。"""
+     v = np.asarray(video)
+     if v.ndim != 4 or v.shape[-1] != 3:
+         raise ValueError(f"{name}: 期望 (T,H,W,3),得到 {v.shape}")
+-    if len(v) < num_frames:
++    needed = CONDITION_FRAMES + num_frames
++    if len(v) < needed:
+         raise ValueError(
+-            f"{name}: 只有 {len(v)} 帧 < --num-frames {num_frames}。"
+-            f"canonical clip 最短 17 帧;更短说明数据有问题,不自动降级。")
+-    return v[:num_frames]
++            f"{name}: 只有 {len(v)} 帧 < 条件帧 {CONDITION_FRAMES} + "
++            f"--num-frames {num_frames}。canonical clip 最短 17 帧，"
++            f"排除首帧后恰有 16 个预测帧；不自动 pad/降级。")
++    return v[CONDITION_FRAMES:needed]
+ 
+ 
+ def collect_pairs(eval_dir: Path):
+@@ -210,6 +220,10 @@ def extract_features_streaming(npy_paths, extractor, num_frames, batch_size, tag
+ 
+ def fvd_for_dir(eval_dir: Path, extractor, num_frames: int, batch_size: int) -> dict:
+     pairs = collect_pairs(eval_dir)
++    if len(pairs) < MIN_SAMPLES_FOR_DISTRIBUTION:
++        raise ValueError(
++            f"{eval_dir}: n={len(pairs)} < {MIN_SAMPLES_FOR_DISTRIBUTION}；"
++            f"分布型指标样本量不足，不产出 FVD_I3D。")
+     gen_feats = extract_features_streaming(
+         [p[1] for p in pairs], extractor, num_frames, batch_size, f"{eval_dir}/generated")
+     gt_feats = extract_features_streaming(
+@@ -221,6 +235,8 @@ def fvd_for_dir(eval_dir: Path, extractor, num_frames: int, batch_size: int) ->
+         "n": len(pairs),
+         "feature_dim": FEATURE_DIM,
+         "num_frames": num_frames,
++        "condition_frames_excluded": CONDITION_FRAMES,
++        "frame_selection": "first_predicted_frames_after_condition",
+         # n < feature_dim → 协方差秩亏(文献同协议亦然);随数字一起公开。
+         "rank_deficient": len(pairs) < FEATURE_DIM,
+     }
+@@ -364,7 +380,9 @@ def _self_test() -> int:
+             v = np.stack([np.clip(base + t * drift, 0, 255) for t in range(T)])
+             np.save(str(root / dirname / f"{key}.npy"), v.astype(np.uint8))
+ 
+-        for i in range(6):
++        # 分布指标统一执行 n>=32 的硬门。自检也必须走同一条生产路径，不能
++        # 为了夹具方便偷偷绕过样本量契约。
++        for i in range(MIN_SAMPLES_FOR_DISTRIBUTION):
+             _mk("generated", f"s{i:02d}", seed=i, drift=3.0)
+             _mk("gt", f"s{i:02d}", seed=100 + i, drift=3.0)
+ 
+@@ -401,15 +419,16 @@ def _self_test() -> int:
+                      lambda: _write_manifest(headline_eligible=False))
+         _gate_blocks("带 manifest_override 痕迹",
+                      lambda: _write_manifest(manifest_override="用过逃生口"))
+-        check("合规 manifest 下门放行", len(collect_pairs(root)) == 6)
+-        check("6 对配对", len(collect_pairs(root)) == 6)
+-        (root / "gt" / "s05.npy").unlink()
++        check("合规 manifest 下门放行",
++              len(collect_pairs(root)) == MIN_SAMPLES_FOR_DISTRIBUTION)
++        check("32 对配对", len(collect_pairs(root)) == MIN_SAMPLES_FOR_DISTRIBUTION)
++        (root / "gt" / "s31.npy").unlink()
+         try:
+             collect_pairs(root)
+             check("缺 gt 配对应硬错", False)
+         except FileNotFoundError:
+             check("缺 gt 配对硬错", True)
+-        _mk("gt", "s05", seed=105, drift=3.0)   # 恢复
++        _mk("gt", "s31", seed=131, drift=3.0)   # 恢复
+ 
+         print("[4/4] 假提取器端到端(管线正确性;真 I3D 契约由首跑 dummy 断言)")
+ 
+@@ -423,7 +442,8 @@ def _self_test() -> int:
+ 
+         r = fvd_for_dir(root, fake_extractor, num_frames=16, batch_size=4)
+         check(f"端到端出数 (FVD_I3D={r['FVD_I3D']:.3f}, n={r['n']})",
+-              np.isfinite(r["FVD_I3D"]) and r["n"] == 6)
++              np.isfinite(r["FVD_I3D"]) and
++              r["n"] == MIN_SAMPLES_FOR_DISTRIBUTION)
+         check("n<400 → rank_deficient=True 被公开", r["rank_deficient"] is True)
+         r_same = fvd_for_dir(root, fake_extractor, 16, 4)
+         check("确定性: 重跑逐位一致", r_same["FVD_I3D"] == r["FVD_I3D"])
+diff --git "a/original\\rswm_server_pack/server_run/score_submission.py" "b/modified\\rswm_server_pack/server_run/score_submission.py"
+index 22e9e9d..000e5ff 100644
+--- "a/original\\rswm_server_pack/server_run/score_submission.py"
++++ "b/modified\\rswm_server_pack/server_run/score_submission.py"
+@@ -65,7 +65,10 @@ if str(_CONTRACT_DIR) not in sys.path:
+ try:
+     from submission_contract import (check_id_set as _contract_check_id_set,
+                                      CONDITION_FRAMES as _CONTRACT_COND_FRAMES,
+-                                     MIN_SAMPLES_FOR_DISTRIBUTION as _CONTRACT_MIN_DIST)
++                                     MIN_SAMPLES_FOR_DISTRIBUTION as _CONTRACT_MIN_DIST,
++                                     strip_condition_frames as _strip_condition_frames,
++                                     assert_enough_for_distribution as _enough_for_distribution,
++                                     contract_summary as _contract_summary)
+ except Exception as _e:      # 契约模块必须在 —— 缺了就不该评分
+     raise SystemExit(
+         f"[FATAL] 无法导入 submission_contract({_e})—— "
+@@ -412,6 +415,11 @@ def _frechet_distance(fa, fb):
+     return float(diff @ diff + np.trace(sig_a + sig_b - 2 * covmean))
+ 
+ 
++def fidelity_views(gen_u8, gt_u8):
++    """保真/分布指标只看预测帧；轨迹指标的调用方继续使用完整视频。"""
++    return _strip_condition_frames(gen_u8, gt_u8)
++
++
+ # --------------------------------------------------------------------------
+ def score(gt_h5, keys, files, win, meta, track, device, rej,
+           dist_metrics=True, verbose=True):
+@@ -421,11 +429,14 @@ def score(gt_h5, keys, files, win, meta, track, device, rej,
+     ssim, psnr, lpips_v = [], [], []
+     ang_err, ang_wellposed, net_ratios = [], [], []
+     per_sample, tb_scores, tb_per_sample = {}, [], {}
+-    mid_gen, mid_gt = [], []
+-    feat_gen, feat_gt = [], []
++    frame_feat_gen, frame_feat_gt = [], []
++    video_feat_gen, video_feat_gt = [], []
+     n_mismatch, n_lpips_fail = 0, 0
+-    vid_model = None
++    frame_model = vid_model = None
+     if dist_metrics:
++        frame_model, _ = MET._load_frame_feature_model(device)
++        if frame_model is None:
++            rej.warn("FID_UNAVAILABLE", "InceptionV3 权重加载失败(离线?)→ FID 记 null")
+         vid_model, _ = MET._load_video_feature_model(device)
+         if vid_model is None:
+             rej.warn("FVD_UNAVAILABLE", "r3d_18 权重加载失败(离线?)→ FVD 记 null")
+@@ -444,14 +455,15 @@ def score(gt_h5, keys, files, win, meta, track, device, rej,
+             gt_u8 = np.clip(f["data"][k]["video_frames"][:], 0, 255).astype(np.uint8)
+             dup_hash[hashlib.md5(gen_u8[:: max(1, len(gen_u8) // 3)].tobytes()).hexdigest()] += 1
+ 
+-            # ---- Track A:保真 ----
+-            s_ = MET.compute_video_ssim(gen_u8, gt_u8)
+-            p_ = MET.compute_video_psnr(gen_u8, gt_u8)
++            # ---- Track A:保真（首帧是 I2V 条件输入，不是预测） ----
++            gen_pred, gt_pred = fidelity_views(gen_u8, gt_u8)
++            s_ = MET.compute_video_ssim(gen_pred, gt_pred)
++            p_ = MET.compute_video_psnr(gen_pred, gt_pred)
+             ssim.append(s_)
+             psnr.append(p_)
+             l_ = None
+             try:
+-                l_ = MET.compute_video_lpips(gen_u8, gt_u8, device)
++                l_ = MET.compute_video_lpips(gen_pred, gt_pred, device)
+                 lpips_v.append(l_)
+             except Exception:
+                 n_lpips_fail += 1
+@@ -469,12 +481,16 @@ def score(gt_h5, keys, files, win, meta, track, device, rej,
+             if a_ is not None and nr is not None and nr >= EV.WELL_POSED_MIN_NET_RATIO:
+                 ang_wellposed.append(a_)
+             if dist_metrics:
+-                mid_gen.append(gen_u8[len(gen_u8) // 2])
+-                mid_gt.append(gt_u8[len(gt_u8) // 2])
++                if frame_model is not None:
++                    frame_feat_gen.append(MET._extract_frame_features(
++                        list(gen_pred), frame_model, device))
++                    frame_feat_gt.append(MET._extract_frame_features(
++                        list(gt_pred), frame_model, device))
+                 if vid_model is not None:
+-                    feat_gen.append(MET._extract_video_features([gen_u8], vid_model, device)[0])
+-                    feat_gt.append(MET._extract_video_features([gt_u8], vid_model, device)[0])
+-            del gt_u8
++                    video_feat_gen.append(MET._extract_video_features(
++                        [gen_pred], vid_model, device)[0])
++                    video_feat_gt.append(MET._extract_video_features(
++                        [gt_pred], vid_model, device)[0])
+ 
+             # ---- Track B:完整轨迹控制(复用 run_trajectory_eval 的打分入口)
+             tb = RTE._score_v2(gen_u8, gt, text_only, sample_key=f"submission/{k}")
+@@ -491,8 +507,10 @@ def score(gt_h5, keys, files, win, meta, track, device, rej,
+                 "direction_target_deg": tgt, "direction_target_source": tsrc,
+                 "gt_net_displacement_ratio": nr, "scene": gt["scene"],
+                 "num_frames": int(len(gen_u8)),
++                "condition_frames_excluded": int(_CONTRACT_COND_FRAMES),
++                "fidelity_frames": int(len(gen_pred)),
+             }
+-            del gen_u8
++            del gen_pred, gt_pred, gen_u8, gt_u8
+             if verbose and n % 25 == 0:
+                 print(f"  … 已评 {n}/{len(keys)}")
+     finally:
+@@ -521,24 +539,33 @@ def score(gt_h5, keys, files, win, meta, track, device, rej,
+         "wellposed_min_net_ratio": EV.WELL_POSED_MIN_NET_RATIO,
+         "angular_caliber": {"flow_size": list(win), "step": 1,
+                             "target": "waypoints 端点净位移 → 四基向量化 → +180°(内容角)"},
++        "Condition_Frames_Excluded": int(_CONTRACT_COND_FRAMES),
++        "FID_Frame_Selection": "all_predicted_frames",
+         "FID": None, "FVD": None, "FVD_Extractor": MET.FVD_EXTRACTOR_NAME,
++        "FVD_Is_Standard_I3D": False,
++        "Contract": _contract_summary(),
+         "per_sample": per_sample,
+     }
+-    if dist_metrics and mid_gen:
+-        try:
+-            ta["FID"] = MET.compute_fid(mid_gen, mid_gt, device)
+-        except Exception as e:
+-            rej.warn("FID_UNAVAILABLE", f"FID 计算失败(离线取不到 Inception 权重?): {e}")
+-        if feat_gen:
++    enough_dist = _enough_for_distribution(
++        len(ssim), metric="FID/FVD", group="official test")
++    if dist_metrics and enough_dist:
++        if frame_feat_gen:
++            try:
++                fg, ft = np.concatenate(frame_feat_gen), np.concatenate(frame_feat_gt)
++                ta["FID"] = _frechet_distance(fg, ft)
++                ta["FID_Frames"] = int(len(fg))
++            except Exception as e:
++                rej.warn("FID_UNAVAILABLE", f"FID 计算失败: {e}")
++        if video_feat_gen:
+             try:
+-                ta["FVD"] = _frechet_distance(np.stack(feat_gen), np.stack(feat_gt))
++                ta["FVD"] = _frechet_distance(
++                    np.stack(video_feat_gen), np.stack(video_feat_gt))
+             except Exception as e:
+                 rej.warn("FVD_UNAVAILABLE", f"FVD 计算失败: {e}")
+-    if len(keys) < 2 and (ta["FID"] is not None or ta["FVD"] is not None):
+-        # FID/FVD 都是**分布级**指标:N=1 时协方差退化(np.cov 给 nan),
+-        # 算出来的数字没有意义 —— 宁可不报,也不让一个 0.0 上榜。
+-        ta["FID"] = ta["FVD"] = None
+-        rej.warn("DIST_METRIC_TOO_FEW", "样本数 < 2,FID/FVD 协方差退化,置 null")
++    elif dist_metrics:
++        why = f"n={len(ssim)} < {_CONTRACT_MIN_DIST}"
++        ta["FID_Skipped_Reason"] = why
++        ta["FVD_Skipped_Reason"] = why
+ 
+     tb_agg = RTE._agg(tb_scores, RTE.TRACKB_KEYS) if tb_scores else {"n": 0}
+     tb_agg["text_only"] = text_only
+diff --git "a/modified\\rswm_server_pack/server_run/test_iclr_protocol.py" "b/modified\\rswm_server_pack/server_run/test_iclr_protocol.py"
+new file mode 100644
+index 0000000..3ba0ce8
+--- /dev/null
++++ "b/modified\\rswm_server_pack/server_run/test_iclr_protocol.py"
+@@ -0,0 +1,216 @@
++#!/usr/bin/env python3
++"""CPU-only behavioral regression tests for the ICLR protocol additions."""
++from __future__ import annotations
++
++import json
++import os
++import sys
++import tempfile
++from pathlib import Path
++from types import SimpleNamespace
++
++import h5py
++import numpy as np
++
++ROOT = Path(__file__).resolve().parent.parent
++NEW = ROOT / "lora_remotesense" / "new"
++SERVER = ROOT / "server_run"
++sys.path.insert(0, str(NEW))
++sys.path.insert(0, str(SERVER))
++
++PASS = 0
++FAIL = 0
++
++
++def check(name, condition, detail=""):
++    global PASS, FAIL
++    if condition:
++        PASS += 1
++        print(f"[PASS] {name}")
++    else:
++        FAIL += 1
++        print(f"[FAIL] {name}: {detail}")
++
++
++def expect_raises(name, exc, fn):
++    try:
++        fn()
++    except exc:
++        check(name, True)
++    except Exception as e:
++        check(name, False, f"wrong exception {type(e).__name__}: {e}")
++    else:
++        check(name, False, "did not raise")
++
++
++def test_matrix():
++    import iclr_matrix
++    p = SERVER / "iclr_experiment_matrix.json"
++    doc = iclr_matrix.load_and_validate(p)
++    runs = iclr_matrix.materialize(doc)
++    runnable = [r for r in runs if r["runnable"]]
++    rank = [r for r in runnable if r["family"] == "rank_sweep"]
++    target = {r["targets"] for r in runnable
++              if r["family"] in ("rank_sweep", "target_ablation")
++              and r.get("rank") == 16}
++    check("matrix_rank_sweep", [r["rank"] for r in rank] == [4, 8, 16, 32, 64])
++    check("matrix_target_ablation", target == {"attn_only", "attn_cam", "all"})
++    check("matrix_frozen", any(r["adaptation"] == "frozen" for r in runnable))
++    full = [r for r in runs if r["adaptation"] == "full"]
++    check("matrix_full_ft_not_faked",
++          len(full) == 1 and full[0]["runnable"] is False
++          and full[0]["status"] == "not_implemented")
++    check("matrix_official_continuous_registration",
++          all(r["prompt_schema"] == "net_continuous"
++              and r["path_estimator"] == "registration" for r in runs))
++
++
++def test_manifest():
++    import run_manifest as rm
++    old = {k: os.environ.get(k) for k in (
++        "RSWM_PROFILE", "SEM_ARM_MODE", "RSWM_PROMPT_SCHEMA",
++        "RSWM_PATH_ESTIMATOR", "RSWM_POSE_MODE")}
++    try:
++        os.environ.update({
++            "RSWM_PROFILE": "official", "SEM_ARM_MODE": "drop",
++            "RSWM_PROMPT_SCHEMA": "net_continuous",
++            "RSWM_PATH_ESTIMATOR": "registration", "RSWM_POSE_MODE": "native",
++        })
++        base = rm.build_manifest(
++            role="headline_native", lora_rank=16, lora_alpha=16,
++            lora_targets="attn_cam", max_train_samples=128,
++            train_seed=42, split_seed=42, num_epochs=5,
++            batch_size=1, gradient_accumulation_steps=4, learning_rate=1e-4)
++        check("manifest_headline_ok", base["headline_eligible"] is True)
++        required = ("lora_targets", "max_train_samples", "train_seed", "split_seed",
++                    "num_epochs", "batch_size", "gradient_accumulation_steps",
++                    "learning_rate", "prompt_schema", "path_estimator")
++        check("manifest_records_recipe", all(k in base for k in required))
++        changed = dict(base); changed["lora_targets"] = "all"
++        expect_raises("manifest_target_mismatch_blocks", RuntimeError,
++                      lambda: rm.assert_compatible(base, changed, ctx="test"))
++        changed = dict(base); changed["max_train_samples"] = 64
++        expect_raises("manifest_cap_mismatch_blocks", RuntimeError,
++                      lambda: rm.assert_compatible(base, changed, ctx="test"))
++        missing_prompt = rm.headline_eligible(
++            "official", "drop", "native", "headline_native",
++            prompt_schema=None, path_estimator="registration")
++        check("manifest_missing_prompt_fail_closed", missing_prompt[0] is False)
++        flow = rm.headline_eligible(
++            "official", "drop", "native", "headline_native",
++            prompt_schema="net_continuous", path_estimator="flow")
++        check("manifest_flow_not_headline", flow[0] is False)
++    finally:
++        for k, v in old.items():
++            if v is None:
++                os.environ.pop(k, None)
++            else:
++                os.environ[k] = v
++
++
++def test_split_compatibility(tmp: Path):
++    from dataset_loader import LingBotDataset, split_dataset_from_file
++    import evaluate
++    import check_benchmark_duplicates as cbd
++
++    h5 = tmp / "tiny.h5"
++    with h5py.File(h5, "w") as f:
++        meta = f.create_group("metadata")
++        meta.attrs["total_instances"] = 6
++        data = f.create_group("data")
++        for i in range(6):
++            g = data.create_group(f"sample_{i:05d}")
++            g.create_dataset("image", data=np.zeros((4, 4, 3), np.uint8))
++            g.create_dataset("video_frames", data=np.zeros((2, 4, 4, 3), np.uint8))
++            g.create_dataset("poses", data=np.repeat(np.eye(4)[None], 2, axis=0))
++            g.create_dataset("intrinsics", data=np.zeros((2, 4), np.float32))
++            g.attrs["prompt"] = "probe"
++            g.attrs["num_frames"] = 2
++    official = tmp / "official.json"
++    official.write_text(json.dumps({"splits": {
++        "train": {"indices": [0, 1, 2], "keys": [f"sample_{i:05d}" for i in (0, 1, 2)]},
++        "val": {"indices": [3, 4], "keys": [f"sample_{i:05d}" for i in (3, 4)]},
++        "test": {"indices": [5], "keys": ["sample_00005"]},
++    }}), encoding="utf-8")
++    ds = LingBotDataset(str(h5), normalize=False)
++    tr, va, tri, vai = split_dataset_from_file(ds, str(official))
++    check("official_split_train_val", len(tr) == 3 and len(va) == 2
++          and tri == [0, 1, 2] and vai == [3, 4])
++    check("official_test_excluded_from_trainer", 5 not in tri and 5 not in vai)
++    check("evaluate_reads_official_val", evaluate.load_val_indices(str(official)) == [3, 4])
++    train, holdout = cbd.load_train_holdout_split(str(official))
++    check("duplicate_gate_official_holdout", train == {0, 1, 2}
++          and holdout == {3, 4, 5})
++    bad = tmp / "bad.json"
++    bad.write_text(json.dumps({"train_indices": [0, 1], "val_indices": [1, 2]}),
++                   encoding="utf-8")
++    expect_raises("split_overlap_blocks", ValueError,
++                  lambda: split_dataset_from_file(ds, str(bad)))
++
++
++def test_rollout_end_to_end(tmp: Path):
++    import evaluate_rollout_protocol as rp
++    h5 = tmp / "rollout.h5"
++    rng = np.random.default_rng(7)
++    gt = rng.integers(1, 250, size=(17, 16, 16, 3), dtype=np.uint8)
++    gen = gt.copy()
++    gen[1:] = np.clip(gen[1:].astype(np.int16) + 1, 0, 255).astype(np.uint8)
++    traj = np.stack([np.full(17, 150.0), 150.0 + 6.0 * np.arange(17)], axis=1)
++    with h5py.File(h5, "w") as f:
++        meta = f.create_group("metadata")
++        meta.attrs["pose_window_size"] = (100, 100)
++        data = f.create_group("data")
++        g = data.create_group("sample_00000")
++        g.create_dataset("video_frames", data=gt)
++        g.create_dataset("trajectory", data=traj)
++        g.create_dataset("full_scene", data=np.zeros((300, 300, 3), np.uint8))
++    ev = tmp / "eval"
++    (ev / "generated").mkdir(parents=True)
++    np.save(ev / "generated" / "sample_00000.npy", gen)
++    (ev / "run_manifest.json").write_text(json.dumps({
++        "headline_eligible": True, "rswm_profile": "official",
++        "prompt_schema": "net_continuous", "path_estimator": "registration",
++    }), encoding="utf-8")
++    result = rp.evaluate(SimpleNamespace(
++        gt_h5=str(h5), eval_dir=str(ev), split_file=None, split_name="val",
++        max_samples=None, allow_nonheadline=False, verbose=False))
++    check("rollout_excludes_condition_frame",
++          result["n_samples"] == 1 and result["n_predicted_frames"] == 16)
++    check("rollout_condition_overlap_bins",
++          all(result["overlap_bins"][k]["n_frames"] > 0 for k in
++              ("dense_80", "sparse_50", "sparse_30", "sparse_10", "sparse_05")))
++    check("rollout_horizon_exact17",
++          result["horizon"]["exact_length_cohorts"]["17"]["n_frames"] == 16)
++    check("rollout_adjacent_separate",
++          result["adjacent_step_overlap_audit"]["definition"] ==
++          "area overlap(frame t-1, frame t)")
++    check("rollout_flow_claim_guard",
++          "not explicit 3D geometry" in
++          result["flow_vector_consistency"]["claim_guard"])
++
++
++def test_common_static():
++    src = (SERVER / "common.sh").read_text(encoding="utf-8")
++    check("common_forwards_max_train_samples",
++          '--max_train_samples "$MAX_TRAIN_SAMPLES"' in src)
++    check("common_forwards_split_file", '--split_file "$TRAIN_SPLIT_FILE"' in src)
++    check("common_official_defaults_continuous",
++          "_RSWM_DEFAULT_PROMPT_SCHEMA=net_continuous" in src)
++    check("common_official_defaults_registration",
++          "_RSWM_DEFAULT_PATH_ESTIMATOR=registration" in src)
++
++
++def main():
++    test_matrix()
++    test_manifest()
++    test_common_static()
++    with tempfile.TemporaryDirectory(dir=os.environ.get("RSWM_TEST_TMP") or ".") as td:
++        tmp = Path(td)
++        test_split_compatibility(tmp)
++        test_rollout_end_to_end(tmp)
++    print(f"\nsummary: {PASS} PASS / {FAIL} FAIL")
++    return 0 if FAIL == 0 else 7
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git "a/original\\rswm_server_pack/server_run/test_pose_timeline.py" "b/modified\\rswm_server_pack/server_run/test_pose_timeline.py"
+index fbec612..190c3af 100644
+--- "a/original\\rswm_server_pack/server_run/test_pose_timeline.py"
++++ "b/modified\\rswm_server_pack/server_run/test_pose_timeline.py"
+@@ -475,7 +475,10 @@ def main():
+             ("official","identity","drop","headline_text",False),
+             ("legacy","identity","identity","legacy",False),
+             ("official","drop","drop","probe_gate",False)):
+-        got, _ = _rm.headline_eligible(pr, sa, pm, role)
++        got, _ = _rm.headline_eligible(
++            pr, sa, pm, role,
++            prompt_schema=("net_continuous" if pr == "official" else "net"),
++            path_estimator=("registration" if pr == "official" else "flow"))
+         check(f"manifest_elig_{pr}_{sa}_{pm}_{role}", got == exp)
+     # fail-closed
+     _m = _rm.build_manifest(role="headline_text", pose_mode="drop")
+@@ -567,7 +570,9 @@ def main():
+                     ("02_train_r128_sem", "legacy")):
+         check(f"role_{j}", f"export RSWM_RUN_ROLE={want}" in R("server_run","pbs",j+".pbs"))
+     # 判门产物不得被标成 headline 合格(行为级)
+-    _e, _ = _rm.headline_eligible("official", "drop", "drop", "probe_gate")
++    _e, _ = _rm.headline_eligible(
++        "official", "drop", "drop", "probe_gate",
++        prompt_schema="net_continuous", path_estimator="registration")
+     check("probe_never_headline", _e is False)
+     # approval_token 必须在抢救之后算
+     check("approval_after_rescue",
+@@ -588,7 +593,9 @@ def main():
+     import os as _os, tempfile as _tf, json as _js
+     _old = dict(_os.environ)
+     _os.environ.update(RSWM_PROFILE="official", SEM_ARM_MODE="drop",
+-                       RSWM_POSE_MODE="drop", RSWM_ALLOW_MANIFEST_MISMATCH="1")
++                       RSWM_POSE_MODE="drop", RSWM_ALLOW_MANIFEST_MISMATCH="1",
++                       RSWM_PROMPT_SCHEMA="net_continuous",
++                       RSWM_PATH_ESTIMATOR="registration")
+     _prev = _rm.build_manifest(role="legacy", pose_mode="identity")
+     _cur = _rm.build_manifest(role="headline_text", pose_mode="drop")
+     _rm.assert_compatible(_prev, _cur, ctx="t")
+diff --git "a/original\\rswm_server_pack/server_run/test_submission_contract.py" "b/modified\\rswm_server_pack/server_run/test_submission_contract.py"
+index 284b9c9..ed0fabb 100644
+--- "a/original\\rswm_server_pack/server_run/test_submission_contract.py"
++++ "b/modified\\rswm_server_pack/server_run/test_submission_contract.py"
+@@ -185,6 +185,16 @@ def main():
+               getattr(_sm, "_CONTRACT_COND_FRAMES", None) == sc.CONDITION_FRAMES)
+         check("equiv_const_min_dist",
+               getattr(_sm, "_CONTRACT_MIN_DIST", None) == sc.MIN_SAMPLES_FOR_DISTRIBUTION)
++        # 行为级钉住官方评分入口：不是只检查它 import 了契约，而是真正验证
++        # SSIM/PSNR/LPIPS/FID/FVD 共用的输入已经去掉首个条件帧。
++        _sg = np.arange(17 * 3, dtype=np.uint8).reshape(17, 1, 1, 3)
++        _st = _sg.copy()
++        _fg, _ft = _sm.fidelity_views(_sg, _st)
++        check("scorer_future_only_len", len(_fg) == 16 and len(_ft) == 16,
++              f"评分器保真帧数应为 16，实得 {len(_fg)}/{len(_ft)}")
++        check("scorer_future_only_starts_at_t1",
++              np.array_equal(_fg[0], _sg[1]) and np.array_equal(_ft[0], _st[1]),
++              "评分器没有从 t=1 开始，可能仍把条件帧计入分数")
+ 
+     print("== T9 阶梯的解析仪器地板必须按段数分(aq=4 只保证逐段轴向)==")
+     _lp = ROOT / "server_run" / "ladder_report.py"

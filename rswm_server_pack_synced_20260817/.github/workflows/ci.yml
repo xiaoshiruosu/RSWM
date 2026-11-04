@@ -1,0 +1,281 @@
+# =============================================================================
+# RSWM-Bench CI —— 纯 CPU、无 GPU、无 HuggingFace 网络
+#
+# 这条 CI 的职责边界（想清楚了再改）：
+#   它证明的是「仓库没有把自己写坏」——语法能过、单测全绿、建库管线在合成
+#   数据上端到端跑得通、产物满足帧数契约。
+#   它【不】证明论文数字可复现：那需要 H200/A100 + 56GB 基模 + 真实 AID，
+#   见 REPRODUCIBILITY.md。把 GPU 栈搬进 CI 只会得到一条永远排队的红灯。
+#
+# 为什么依赖不钉死版本（与 requirements-lock.txt 相反）：
+#   * requirements-lock.txt 的 numpy 上界是 `<2`（torch 2.4.0 的 ABI 约束），
+#     而 CI 想同时覆盖 py3.10 与 py3.12 —— 新 numpy 只支持 3.12+，老 numpy
+#     没有 3.12 轮子，一套精确 pin 无法同时满足两条腿。
+#   * CI 要抓的正是「依赖漂移把仓库跑挂了」，钉死了就抓不到。
+#   本机实跑验证时用到的版本（2026-07-29，py3.12）：
+#     numpy 2.5.1 / h5py 3.16.0 / opencv-python-headless 5.0.0.93 /
+#     pillow 12.3.0 / tqdm 4.70.0，全部通过。
+#
+# 为什么不装 torch：
+#   五个 test_*.py 都对缺失的重依赖做了显式降级（把 torch/cv2/lpips/skimage
+#   替换成空 ModuleType，见各文件顶部的 `sys.modules[_m] = types.ModuleType(_m)`），
+#   `--no-hf` 建库分支也不碰 torch。本机已验证：不装 torch 时五个单测同样
+#   全绿（且用例数与装了 torch 时一致）。省下 ~2GB 下载和数分钟排队。
+#
+# 为什么不需要 HF 网络：
+#   语义门只在真实数据分支挂载 —— builder 里的条件是
+#   `if use_hf and _sg.gate_enabled()`，`--no-hf` 走程序化合成场景，
+#   不加载 CLIP。下面仍然把 HF_*_OFFLINE 全部置 1：任何意外的联网调用会
+#   直接报错，这就是「无网可跑」的断言本身，而不是靠祈祷。
+# =============================================================================
+name: CI (CPU-only, offline)
+
+# 加引号是有意的:YAML 1.1 会把裸 `on` 当成布尔真,用 PyYAML 之类的工具
+# 解析这份文件时键名会变成 True。GitHub 自己解析得对,但我们希望这份文件
+# 用通用 YAML 解析器读出来也是对的(本文件的验收方式就是 python -c yaml.safe_load)。
+"on":
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cpu-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.10 = 服务器实测口径（setup_env.sh PY_VER=3.10、flash-attn cp310 轮子、
+        #        README_RUN.md §0 机器要求表）。
+        # 3.12 = 本地验证口径（作者沙箱里唯一的解释器）。
+        # 两条腿都必须绿：3.10 掉了说明生产环境要炸，3.12 掉了说明依赖漂移。
+        # 已静态确认全仓 .py 没有 3.11+ 语法、也没有 3.11/3.12 才有的 stdlib API。
+        python-version: ["3.10", "3.12"]
+
+    env:
+      # 计算节点断网是这个项目的常态（见 server_run/pbs/_pbs_env.sh），
+      # CI 复刻同一条件：任何隐式联网都会硬失败而不是静默降级。
+      HF_HUB_OFFLINE: "1"
+      HF_DATASETS_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: 定位包根（兼容"包即仓库根"与"包在子目录"两种放法）
+        run: |
+          set -euo pipefail
+          CAND="$(find . -maxdepth 4 -type f -path '*/server_run/common.sh' -print -quit)"
+          [ -n "$CAND" ] || { echo "FATAL: 找不到 server_run/common.sh —— 这不是 RSWM 包"; exit 1; }
+          PACK_ROOT="$(cd "$(dirname "$(dirname "$CAND")")" && pwd)"
+          echo "PACK_ROOT=$PACK_ROOT" >> "$GITHUB_ENV"
+          echo "包根 = $PACK_ROOT"
+
+      - name: 装最小依赖（CPU、无 torch）
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          # headless 版 opencv：CI runner 没有 libGL，装普通 opencv-python 会
+          # 在 import 时报 libGL.so.1 缺失。这不是洁癖，是 runner 的硬事实。
+          # [v3.1] 补 scikit-image 与 scipy。实测缺它们时
+          # test_submission_contract.py(七种作弊 + 条件帧剔除)与
+          # test_metrics_known_answer.py(度量 known-answer)**在 CI 里跑不起来**
+          # —— 而这两个恰恰覆盖最重要的东西。SSIM 走 skimage.metrics,
+          # 统计量走 scipy;两者都是纯 CPU 轮子,不引 torch。
+          python -m pip install \
+            "numpy" "h5py" "opencv-python-headless" "Pillow" "tqdm" \
+            "scikit-image" "scipy"
+          python -m pip list
+
+      - name: 环境自证（无 GPU / 无 torch / 离线）
+        run: |
+          set -euo pipefail
+          if command -v nvidia-smi >/dev/null 2>&1; then
+            echo "意外:CI runner 上有 nvidia-smi"; nvidia-smi -L || true
+          else
+            echo "无 nvidia-smi —— 纯 CPU,符合预期"
+          fi
+          python - <<'PY'
+          import importlib.util
+          print("torch 已安装 :", importlib.util.find_spec("torch") is not None, "(预期 False)")
+          for m in ("numpy", "h5py", "cv2", "PIL"):
+              mod = __import__(m)
+              print(f"{m:6s}", getattr(mod, "__version__", "n/a"))
+          PY
+
+      - name: A. 全仓 py_compile
+        run: |
+          set -euo pipefail
+          cd "$PACK_ROOT"
+          # 用 -print0/-0 而不是空格分隔:路径里有空格时不会被拆成两半。
+          # -n 50 限制单次参数量,避免超长命令行。
+          N="$(find . -type f -name '*.py' -not -path './.git/*' | wc -l)"
+          echo "py 文件数: $N"
+          [ "$N" -gt 0 ] || { echo "FATAL: 一个 .py 都没找到,find 条件写错了"; exit 1; }
+          find . -type f -name '*.py' -not -path './.git/*' -print0 \
+            | xargs -0 -n 50 python -m py_compile
+          echo "py_compile 全部通过"
+
+      - name: B. 全仓 bash -n（*.sh 与 *.pbs）
+        run: |
+          set -euo pipefail
+          cd "$PACK_ROOT"
+          fails=0; total=0
+          while IFS= read -r f; do
+            total=$((total + 1))
+            bash -n "$f" || { echo "SYNTAX FAIL: $f"; fails=$((fails + 1)); }
+          done < <(find . -type f \( -name '*.sh' -o -name '*.pbs' \) -not -path './.git/*' | sort)
+          echo "脚本数: $total,语法失败: $fails"
+          [ "$total" -gt 0 ] || { echo "FATAL: 一个脚本都没找到"; exit 1; }
+          [ "$fails" -eq 0 ]
+
+      - name: C. 跑全部 server_run/test_*.py
+        run: |
+          set -euo pipefail
+          cd "$PACK_ROOT"
+          # 用 glob 发现而不是写死清单:新增单测自动纳入,不会悄悄漏跑。
+          shopt -s nullglob
+          tests=(server_run/test_*.py)
+          echo "发现单测: ${#tests[@]} 个"
+          [ "${#tests[@]}" -gt 0 ] || { echo "FATAL: 没发现任何 test_*.py"; exit 1; }
+          fails=0
+          for t in "${tests[@]}"; do
+            echo "::group::$t"
+            # 不用 set -e 直接中断:要让所有单测都跑完再汇总,
+            # 只看第一个失败会掩盖同一次改动引入的其它问题。
+            if python "$t"; then echo "[CI] OK   $t"; else echo "[CI] FAIL $t"; fails=$((fails + 1)); fi
+            echo "::endgroup::"
+          done
+          echo "失败单测数: $fails"
+          [ "$fails" -eq 0 ]
+
+      - name: C2. 跑全部 --self-test 模块（自动发现，新增的不会漏跑）
+        run: |
+          set -euo pipefail
+          cd "$PACK_ROOT"
+          # 此前 CI 只跑 server_run/test_*.py。实测仓库里另有 11 个模块
+          # 自带 `--self-test`（近重复检测 44 条、semgate 仲裁 26 条、
+          # 构造审计集 20 条、外推基线 19 条、仪器地板、backbone、
+          # 轨迹几何、冻结校验……）—— 一条都没在 CI 里跑过。
+          # 用 find+grep 自动发现而不是写死清单：新增自检模块自动纳入。
+          # 注意必须先用 find 限定 .py —— 早先写 `grep -rl --include='*.py'`
+          # 有两个坑，本地实测都踩了：
+          #   (1) 本文件（ci.yml）自身含 "--self-test" 字面量，会被匹配进来，
+          #       然后 `python ci.yml --self-test` 必然失败；
+          #   (2) 不同 grep 实现对 -r 与 --include 的组合行为不一致（ugrep 直接
+          #       把 --include 的值当路径找）。
+          mapfile -t mods < <(find . -type f -name '*.py' -not -path './.git/*' -print0 \
+                              | xargs -0 grep -l -- '"--self-test"' | sort)
+          echo "发现自检模块: ${#mods[@]} 个"
+          [ "${#mods[@]}" -ge 10 ] || {
+            echo "FATAL: 只发现 ${#mods[@]} 个自检模块（预期 ≥10）——"
+            echo "       发现逻辑坏了，或模块被删了。不接受静默少跑。"; exit 1; }
+          fails=0
+          for m in "${mods[@]}"; do
+            echo "::group::$m --self-test"
+            if python "$m" --self-test; then echo "[CI] OK   $m"
+            else echo "[CI] FAIL $m"; fails=$((fails + 1)); fi
+            echo "::endgroup::"
+          done
+          echo "自检失败模块数: $fails"
+          [ "$fails" -eq 0 ]
+
+      - name: D. --no-hf 小规模建库冒烟（-n 8）+ 产物契约断言
+        run: |
+          set -euo pipefail
+          cd "$PACK_ROOT"
+          SMOKE="$(mktemp -d)"
+          echo "冒烟目录: $SMOKE"
+          # --temp-dir 必须给:默认值是相对路径 temp_benchmark/,会在仓库里
+          # 留下 60MB 中间产物并污染后续 checkout 的 diff。
+          # -n 8:必须是 4 的倍数(四场景等分)。
+          python lora_remotesense/build_dataset_from_benchmark.py \
+            -o "$SMOKE/smoke.h5" -n 8 --no-hf --temp-dir "$SMOKE/tmp_bench"
+          test -f "$SMOKE/smoke.h5" || { echo "FATAL: 没产出 H5"; exit 1; }
+          SMOKE_H5="$SMOKE/smoke.h5" python - <<'PY'
+          import os
+          import h5py
+          import numpy as np
+
+          path = os.environ["SMOKE_H5"]
+          bad = []
+          with h5py.File(path, "r") as f:
+              keys = sorted(f["data"].keys())
+              if len(keys) != 8:
+                  bad.append(f"样本数 {len(keys)} != 8")
+              for k in keys:
+                  g = f["data"][k]
+                  T = int(g.attrs["num_frames"])
+                  K = int(g.attrs["num_segments"])
+                  # 帧数契约:steps=9 → T = 9 + (K-1)*8,且 T ≡ 1 (mod 4)
+                  # (Wan 系 VAE 的时间下采样要求)。这是整条管线最容易被
+                  # 无声改坏的不变量 —— 改了 steps 或段数逻辑就会在这里炸。
+                  if T != 9 + (K - 1) * 8:
+                      bad.append(f"{k}: T={T} 不等于 9+(K-1)*8, K={K}")
+                  if T % 4 != 1:
+                      bad.append(f"{k}: T={T} 不满足 T≡1 (mod 4)")
+                  if not (1 <= K <= 4):
+                      bad.append(f"{k}: num_segments={K} 越界")
+                  vf = g["video_frames"]
+                  if vf.shape != (T, 480, 832, 3):
+                      bad.append(f"{k}: video_frames {vf.shape} != ({T},480,832,3)")
+                  if g["poses"].shape != (T, 4, 4):
+                      bad.append(f"{k}: poses {g['poses'].shape} != ({T},4,4)")
+                  if g["trajectory"].shape != (T, 2):
+                      bad.append(f"{k}: trajectory {g['trajectory'].shape} != ({T},2)")
+                  if g["waypoints"].shape != (K + 1, 2):
+                      bad.append(f"{k}: waypoints {g['waypoints'].shape} != ({K+1},2)")
+                  if g["segment_angles"].shape != (K,):
+                      bad.append(f"{k}: segment_angles {g['segment_angles'].shape} != ({K},)")
+                  p = str(g.attrs["prompt"])
+                  if f"{K}-segment" not in p:
+                      bad.append(f"{k}: prompt 未声明 {K}-segment: {p!r}")
+                  if not any(w in p for w in ("east", "north", "west", "south")):
+                      bad.append(f"{k}: prompt 缺方向词: {p!r}")
+                  # 帧真的在动:相邻帧全同 = 滑窗没生效(曾经的真实故障模式)
+                  a = np.asarray(vf[0], dtype=np.float64)
+                  b = np.asarray(vf[min(1, T - 1)], dtype=np.float64)
+                  if T > 1 and float(np.abs(a - b).mean()) == 0.0:
+                      bad.append(f"{k}: 首两帧逐位相同,滑窗未生效")
+          if bad:
+              print("[FAIL] 产物契约不满足:")
+              for x in bad:
+                  print("  ✗", x)
+              raise SystemExit(1)
+          print(f"[PASS] {len(keys)} 条样本全部满足帧数契约与形状契约")
+          PY
+          rm -rf "$SMOKE"
+
+      - name: E. 工作区必须干净（CI 步骤不许往仓库里写东西）
+        run: |
+          set -euo pipefail
+          cd "$PACK_ROOT"
+          # actions/checkout 之后这里一定是 git 仓库。本地手动跑这些步骤时
+          # 可能不是 —— 那种情况下大声跳过,而不是假装通过。
+          if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+            echo "NOTE: 不在 git 工作树内(本地手动执行?),跳过洁净检查。"
+            echo "      在 CI 里这一步永远会真跑,因为 actions/checkout 建了仓库。"
+            exit 0
+          fi
+          # __pycache__ 是 A 步骤的正常产物,忽略;其余任何新增/改动都说明
+          # 某一步把中间产物写进了仓库(例如忘了给 --temp-dir)。
+          DIRT="$(git status --porcelain | grep -v '__pycache__' || true)"
+          if [ -n "$DIRT" ]; then
+            echo "FATAL: CI 跑完后工作区不干净:"
+            echo "$DIRT"
+            exit 1
+          fi
+          echo "工作区干净"

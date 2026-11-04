@@ -1,0 +1,18 @@
+{
+  "schema": "rsroll.baseline_card/v1",
+  "name": "rswise_recursive",
+  "source": "https://arxiv.org/abs/2509.17808",
+  "checkpoint": null,
+  "native_input": "condition image and discrete direction instruction",
+  "native_output": "single neighboring image",
+  "number_of_condition_views": 1,
+  "uses_camera_pose": false,
+  "uses_future_gt": false,
+  "training_data": "not available in this repository",
+  "adaptation": "none; native implementation is absent",
+  "notes": "Registered stub only. No verified official code/checkpoint was found during the 2026-08-16 audit.",
+  "trajectory_support": "direction only",
+  "comparison_track": "adapted_image_extrapolation",
+  "main_table_eligible": false,
+  "runtime_status": "NOT IMPLEMENTED / NOT RUN"
+}

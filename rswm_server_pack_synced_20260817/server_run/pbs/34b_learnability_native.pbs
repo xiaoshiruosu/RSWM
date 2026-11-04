@@ -1,0 +1,269 @@
+#!/bin/bash
+#PBS -P rx40
+#PBS -q gpuhopper
+#PBS -N rswm_probe34b_native
+#PBS -l ncpus=12,ngpus=1,mem=128GB,jobfs=100GB,walltime=24:00:00
+#PBS -l storage=scratch/qk73+scratch/rx40
+#PBS -l wd
+#PBS -j oe
+# =============================================================================
+# probe34b_native · Plücker 方向可学习性(判门作业)
+#
+# 为什么它必须先跑:论文 headline 是 null("方向控制不迁移")。审稿人第一问
+# 是"是范式不迁移,还是你的配方教不会任何东西"—— 现有 shufpose/geostrip/
+# oracle 都答不了,它们只证明"信号进没进通道"和"估计器准不准"。
+#
+# 本作业用【最简单可能的方向任务】给出正对照:
+#   * 单段直线(K=1,无转弯) * 四个基本方向 * 预注册高重叠 [0.50,0.95)
+#   * 同一 LoRA 配方(r16/α16/同 lr/同 epochs) * pose_mode=native
+#
+# [v2.9.1 拍板] 判门拆成 34a/34b 两个通路,共享同一探针库:
+#   34a  drop   → 文本方向可学习性
+#   34b  native → Plücker 方向可学习性
+# **两个都 PASS 才放行 20-30/35/36**。只让 drop PASS 就解锁全部 native 实验,
+# 证据链不完整:native 主线失败时审稿人仍可归因"pose 管线/表示学不会",
+# 而不是迁移能力失败。
+# 本作业 = native:真实轨迹 Plücker 全程注入,测几何通路能否学会方向。
+# 它若 FAIL,23-25 的 native 主线任何 null 结论都不成立(先修管线)。
+# 若它的角误差掉到接近量化地板 → 任务在此管线下【可学】,headline null 升级为
+# "难度阈值"结论(强得多);若它也停在 ~90° → 问题在管线/仪器而非 backbone,
+# **必须先查再谈论文**,后续 20-33/35/36 一律不提交。
+#
+# [拍板] 34 是【独立 profile】:显式豁免 overlap<0.10,单独 WORK 子目录,
+# 绝不与 headline benchmark 混库(它的高重叠数据不得进主表)。
+# =============================================================================
+_ENVF="${PBS_O_WORKDIR:-$PWD}/server_run/pbs/_pbs_env.sh"
+[ -f "$_ENVF" ] || { echo "FATAL: 找不到 $_ENVF"; exit 1; }
+source "$_ENVF"
+# [v2.9.3] 产物角色 —— 进 run_manifest,并参与 headline 资格判定
+export RSWM_RUN_ROLE=probe_gate
+
+PROBE_DIR="$WORK/probe34"
+PROBE_H5="$PROBE_DIR/data/probe_geo.h5"
+PROBE_AUDIT="$PROBE_DIR/overlap_audit.json"
+# [v2.9.1] 探针库由 01 号统一建(K=1 / 四方向 / 预注册高重叠),34a 与 34b 共享
+# 同一批数据 —— 两个通路的正对照必须在【同一任务难度】上比较,各建各的就没法比。
+for _f in "$PROBE_H5" "$PROBE_AUDIT"; do
+    [ -f "$_f" ] || { echo "FATAL: 缺 $_f —— 请先跑 01(它负责建探针库)"; exit 1; }
+done
+
+# ---- 训练(同主线配方;pose_mode=drop = 真 no-pose 文本臂)----
+if ! done_p p_probe34b_native_train; then
+    # 独立探针库不复用主库 official_splits（索引空间不同）。
+    TRAIN_SPLIT_FILE= POSE_MODE=native train_lora probe34b_native 16 16 "$PROBE_H5" "$PROBE_DIR/train_probe34b_native"
+    stamp p_probe34b_native_train
+fi
+
+# ---- 评估:在【训练集】上评(拍板口径 = 训练集过拟合探针)----
+# 判门问的不是"能不能泛化",而是"这条管线能不能把方向学进去哪怕一点"。
+# 连自己训练过的 20 条都学不会 → 问题在仪器/管线,泛化无从谈起。
+# evaluate.py 的 load_split 只认 val_indices,所以派生一份 train_as_val.json
+# (不改评估代码,零风险)。
+TRAIN_AS_VAL="$PROBE_DIR/train_probe34b_native/train_as_val.json"
+$PY - "$PROBE_DIR/train_probe34b_native/train_val_split.json" "$TRAIN_AS_VAL" <<'PYSPLIT'
+import json, sys
+from pathlib import Path
+src = json.loads(Path(sys.argv[1]).read_text())
+tr = src.get("train_indices") or []
+if not tr:
+    print("FATAL: split 文件里没有 train_indices"); sys.exit(1)
+out = dict(src); out["val_indices"] = tr
+out["_note"] = "34 判门:val_indices 被替换为 train_indices(训练集过拟合探针)"
+Path(sys.argv[2]).write_text(json.dumps(out, indent=2))
+print(f"[probe34b_native] 训练集过拟合评估:{len(tr)} 条")
+PYSPLIT
+[ -f "$TRAIN_AS_VAL" ] || { echo "FATAL: 派生 split 失败"; exit 1; }
+
+if ! done_p p_probe34b_native_eval; then
+    POSE_MODE=native eval_lora probe34b_native "$PROBE_DIR/train_probe34b_native/best_checkpoint" \
+        "$PROBE_H5" "$TRAIN_AS_VAL" \
+        "$PROBE_DIR/eval_probe34b_native" 0
+    stamp p_probe34b_native_eval
+fi
+
+# ---- 判门:角误差必须显著优于随机(90°),否则后续 GPU 全停 ----
+$PY - "$PROBE_DIR/eval_probe34b_native" <<'PYGATE'
+import json, os, sys
+from pathlib import Path
+import numpy as np
+
+d = Path(sys.argv[1]); p = d / "eval_results.json"
+if not p.is_file():
+    print("[probe34b_native] FATAL: 无 eval_results.json"); sys.exit(1)
+R = json.loads(p.read_text()); ov = R.get("overall", {})
+E = float(os.environ.get("PROBE34_MAX_ANGLE", "45"))
+MIN_VALID = float(os.environ.get("PROBE34_MIN_VALID", "0.7"))
+MIN_PER_DIR = int(os.environ.get("PROBE34_MIN_PER_DIR", "2"))
+MIN_MOTION = float(os.environ.get("PROBE34_MIN_MOTION", "0.30"))
+fails = []
+
+# --- (a0) 预注册 overlap 区间:artifact 必须报告并落在带内 ---
+# [v2.9 拍板] accept_rate=1.0 只说明源图没被拒,不证明任务降到了 easy。
+# 探针"简单"的三条腿:K=1(无转弯) / 四基本方向 / 高重叠。前两条由建库参数
+# 保证,第三条必须用实际 overlap 分布证明 —— 否则判门 PASS 时论文那句
+# "平凡难度正对照"仍然没有实验支撑。
+LO = float(os.environ.get("PROBE34_OV_LO", "0.50"))
+HI = float(os.environ.get("PROBE34_OV_HI", "0.95"))
+_aud = None
+for _c in (d.parent / "overlap_audit.json",
+           d.parent / "tmp_bench" / "overlap_audit.json"):
+    if _c.is_file():
+        _aud = json.loads(_c.read_text()); print(f"[probe34b_native] overlap artifact ← {_c}"); break
+if _aud is None:
+    fails.append("找不到 overlap_audit.json —— 无法证明探针确实是高重叠 profile")
+else:
+    _st = _aud.get("overlap_stats") or {}
+    _acc = _aud.get("overlap_accepted") or []
+    print(f"[probe34b_native] 预注册 overlap 区间 [{LO}, {HI});实际 n={len(_acc)} "
+          f"min={_st.get('min', min(_acc) if _acc else float('nan')):.4f} "
+          f"p50={_st.get('p50', float('nan')):.4f} max={_st.get('max', float('nan')):.4f}")
+    if not _acc:
+        fails.append("overlap_audit 里没有 accepted 样本,无法核验区间")
+    else:
+        _lo_a, _hi_a = min(_acc), max(_acc)
+        if _lo_a < LO or _hi_a >= HI:
+            fails.append(f"overlap ∈ [{_lo_a:.4f}, {_hi_a:.4f}] 越出预注册区间 "
+                         f"[{LO}, {HI}) —— 探针不是承诺的高重叠 profile,"
+                         f"'最简单可能的方向任务'这一前提不成立")
+        if _aud.get("min_overlap_ratio") != LO or _aud.get("max_overlap_ratio") != HI:
+            fails.append(f"artifact 记录的区间 [{_aud.get('min_overlap_ratio')}, "
+                         f"{_aud.get('max_overlap_ratio')}) 与判门预注册的 [{LO}, {HI}) "
+                         f"不一致 —— 建库参数与判门口径分叉")
+        # 交叉核对 H5 自己记的生成口径(audit JSON 可被替换,H5 是产物本身)
+    try:
+        import h5py
+        with h5py.File(str(d.parent / "data" / "probe_geo.h5"), "r") as _hf:
+            _hm = dict(_hf["metadata"].attrs)
+            _h_lo = float(_hm.get("min_overlap_ratio", -1))
+            _h_hi = float(_hm.get("max_overlap_ratio", -1))
+            _h_aq = int(_hm.get("angle_quantize", 0))
+            _h_ov = [float(_hf["data"][k].attrs["overlap_ratio"])
+                     for k in _hf["data"] if "overlap_ratio" in _hf["data"][k].attrs]
+        print(f"[probe34b_native] H5 自记口径: band=[{_h_lo}, {_h_hi}) angle_quantize={_h_aq} "
+              f"逐样本 overlap n={len(_h_ov)}")
+        if (_h_lo, _h_hi) != (LO, HI):
+            fails.append(f"H5 记的 band [{_h_lo}, {_h_hi}) 与判门预注册 [{LO}, {HI}) 不一致")
+        if _h_aq != 4:
+            fails.append(f"H5 记的 angle_quantize={_h_aq} ≠ 4 —— 四方向前提不成立")
+        if not _h_ov:
+            # [v2.9.4] 没有逐样本 overlap 就没法自证 —— 而"从产物自证"正是这条
+            # 检查存在的理由(audit JSON 可被替换,H5 才是产物本身)。fail-closed。
+            fails.append("H5 里没有逐样本 overlap_ratio 属性 —— 无法从产物自证"
+                         "高重叠,请用 v2.9.2+ 的 builder 重建探针库")
+        elif not all(LO <= x < HI for x in _h_ov):
+            fails.append(f"H5 逐样本 overlap ∈ [{min(_h_ov):.4f}, {max(_h_ov):.4f}] 越出带")
+    except Exception as _e:
+        fails.append(f"无法从探针 H5 自证生成口径: {_e}")
+    if not _aud.get("enforce", False):
+            fails.append("overlap enforce=False —— 区间没有被真正强制,"
+                         "分布落在带内可能只是偶然")
+
+# --- (a) 有效率:well-posed 样本占比,太低则角误差只是少数样本的噪声 ---
+n_all = ov.get("num_samples") or 0
+n_wp = ov.get("Angular_Error_WellPosed_Count")
+if n_wp is None:
+    n_wp = ov.get("WellPosed_N")
+n_wp = n_wp or 0
+vr = (n_wp / n_all) if n_all else 0.0
+print(f"[probe34b_native] 有效率(well-posed/全部) = {n_wp}/{n_all} = {vr:.0%}(门 {MIN_VALID:.0%})")
+if vr < MIN_VALID:
+    fails.append(f"有效率 {vr:.0%} < {MIN_VALID:.0%} —— 多数样本净位移过小,"
+                 f"方向目标本身就不适定,这批探针数据无判别力")
+
+# --- (b) 四方向覆盖与平衡:单一方向撑起来的均值没有意义 ---
+# [v2.9.1 P0] 只认四个【基本方向】键。evaluate.py 还会写 dir_{方向}_{场景}
+# 交叉块(len(idx)>=2 即建),旧写法 startswith("dir_") 会把 dir_E_urban 这种
+# 2 样本格子当成基本方向 —— 一个格子超阈就否掉整条链,而报错文案说的是
+# "基本方向没学会",会把人引去查 pose 时间轴/prompt 注入。
+_CARD = ("E", "N", "W", "S")
+dirs = {k[4:]: v for k, v in R.items()
+        if k.startswith("dir_") and k[4:] in _CARD and isinstance(v, dict)}
+counts = {k: (v.get("num_samples") or 0) for k, v in dirs.items()}
+print(f"[probe34b_native] 四方向样本数 = {counts}")
+missing = [x for x in ("E", "N", "W", "S") if counts.get(x, 0) < MIN_PER_DIR]
+if missing:
+    fails.append(f"方向 {missing} 的样本数 < {MIN_PER_DIR} —— 四方向未覆盖/严重失衡,"
+                 f"总体角误差可能被单一方向主导")
+
+# --- (c) 逐方向角误差:每个方向都要过门,不许拿一个好方向平均掉三个坏的 ---
+per = {}
+for k, v in dirs.items():
+    a = v.get("Angular_Error_WellPosed_Mean")
+    if a is None:
+        a = v.get("Angular_Error")
+    per[k] = a
+print(f"[probe34b_native] 逐方向角误差 = " +
+      ", ".join(f"{k}={('%.1f°' % v) if v is not None else 'N/A'}"
+                for k, v in sorted(per.items())))
+bad = [k for k, v in per.items() if v is not None and v > E]
+if bad:
+    fails.append(f"方向 {sorted(bad)} 的角误差 > {E}° —— 至少一个基本方向没学会")
+# [v2.9.4] 拿不到角误差的方向不能静默跳过 —— "没有数字"不等于"通过"。
+# (dir_* 聚合块里未必有裸 Angular_Error 键;回退失败时旧代码 per[k]=None,
+#  下面的 v is not None 直接把它豁免掉,一个完全没学会的方向就此隐形。)
+_noang = [k for k in _CARD if k in counts and per.get(k) is None]
+if _noang:
+    fails.append(f"方向 {sorted(_noang)} 有样本却拿不到角误差 —— 无法证明它学会了,"
+                 f"按未通过处理(检查 well-posed 子集是否为空)")
+
+# --- (d) 运动幅度:静止输出会让方向角变成纯噪声,角误差再好看也不算数 ---
+def energy(dirname):
+    fs = sorted((d / dirname).glob("*.npy"))
+    if not fs:
+        return None
+    vals = []
+    for f in fs[:32]:
+        v = np.load(f).astype(np.float32)
+        if v.ndim == 4 and v.shape[0] >= 2:
+            vals.append(float(np.abs(np.diff(v, axis=0)).mean()))
+    return float(np.mean(vals)) if vals else None
+
+eg, et = energy("generated"), energy("gt")
+if eg is None or et is None or et <= 0:
+    print("[probe34b_native] ⚠ 无法计算运动能量(缺 generated/ 或 gt/ 的 .npy),跳过该项")
+else:
+    ratio = eg / et
+    print(f"[probe34b_native] 运动能量 生成/真值 = {eg:.4f}/{et:.4f} = {ratio:.2f}(门 {MIN_MOTION})")
+    if ratio < MIN_MOTION:
+        fails.append(f"生成视频几乎静止(运动能量仅真值的 {ratio:.0%})—— "
+                     f"光流方向估计退化为噪声,角误差不可解读")
+
+# --- (e) 总体角误差 ---
+# `or` 链会把 0.0 当假值吞掉 —— 探针若真学到近乎完美(0.0°)会静默改用
+# 全样本口径。显式判 None。
+ang = None
+for _k in ("Angular_Error_WellPosed_Mean", "Angular_Error_Mean", "Angular_Error"):
+    if ov.get(_k) is not None:
+        ang = ov[_k]; break
+if ang is None:
+    fails.append("结果里没有角误差")
+else:
+    print(f"[probe34b_native] 总体角误差 = {ang:.2f}°(门 {E}°;随机期望 90°,量化地板 ~22.5°)")
+    if ang > E:
+        fails.append(f"总体角误差 {ang:.2f}° > {E}°")
+
+# [v2.9.2] 判门结论落成机器可读产物 —— 编排/汇总/审稿都不该去 grep 日志。
+_gr = {"gate": "probe34b_native", "pose_mode": "native", "passed": not fails,
+       "failures": fails, "eval_dir": str(d),
+       "overlap_band": [LO, HI],
+       "overlap_observed": ([min(_acc), max(_acc)] if _aud and _acc else None),
+       "per_direction_angle": per, "direction_counts": counts,
+       "valid_ratio": vr, "overall_angle": ang}
+(d / "gate_result.json").write_text(json.dumps(_gr, indent=2, ensure_ascii=False))
+print(f"[probe34b_native] 判门结论 → {d / 'gate_result.json'}")
+
+if fails:
+    print("\n[probe34b_native] LEARNABILITY PROBE (native): FAIL")
+    for i, f in enumerate(fails, 1):
+        print(f"      {i}. {f}")
+    print("\n      这是【训练集过拟合探针】—— 连训练过的 20 条最简单单段直线都"
+          "\n      学不会,说明问题在管线/仪器而非 backbone 的迁移能力。"
+          "\n      禁止提交 20-33/35/36。先查:pose 时间轴、prompt 注入、"
+          "\n      训练是否真在优化方向相关的项、光流估计的量程标定。")
+    sys.exit(3)
+print("\n[probe34b_native] LEARNABILITY PROBE (native): PASS —— 任务在本管线下可学(有效率/四方向平衡/"
+      "\n     逐方向误差/运动幅度/总体误差 全部达标),主矩阵的 null 结论才有解释力。")
+PYGATE
+_rc=$?
+[ "$_rc" -eq 0 ] || exit "$_rc"
+echo "[ok] 34 可学习性探针 PASS —— 可提交 20-33/35/36"

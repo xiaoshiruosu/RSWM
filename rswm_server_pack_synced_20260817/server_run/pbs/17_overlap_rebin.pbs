@@ -1,0 +1,27 @@
+#!/bin/bash
+#PBS -P rx40
+#PBS -q gpuhopper
+#PBS -N rswm_17_overlap_rebin
+#PBS -l ncpus=12,ngpus=1,mem=128GB,jobfs=100GB,walltime=03:00:00
+#PBS -l storage=scratch/qk73+scratch/rx40
+#PBS -l wd
+#PBS -j oe
+# 每个 .pbs = 一个实验。换项目/队列/存储改上面 -P/-q/-l storage;换机器路径改 _pbs_env.sh。
+# 01-19 legacy 作业;当前流程用 qsub_corrected_rerun.sh。手动 qsub 仅用于复现旧结果。
+_ENVF="${PBS_O_WORKDIR:-$PWD}/server_run/pbs/_pbs_env.sh"
+[ -f "$_ENVF" ] || { echo "FATAL: 找不到 $_ENVF —— 必须从包根 qsub(缺 -l wd 或提交目录不对)"; exit 1; }
+source "$_ENVF"
+
+# Overlap 重分箱(需 13-16 四档都评完)
+for METHOD in lora baseline; do
+  for STRAT in quartile two_level; do
+    TAG="p4_rebin_${METHOD}_${STRAT}"
+    if ! done_p "$TAG"; then
+        ( cd "$ROOT" && $PY lora_remotesense/rebin_overlap_metrics.py \
+            --base-dir "$OVBASE" --method "$METHOD" --strategy "$STRAT" \
+            --output-dir "$OVBASE/rebin_${METHOD}_${STRAT}" --device "$DEVICE" ) 2>&1 | tee "$LOGS/$TAG.log"
+        stamp "$TAG"
+    fi
+  done
+done
+echo "[ok] overlap 重分箱完成: $OVBASE/rebin_*"

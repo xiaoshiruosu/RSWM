@@ -1,0 +1,72 @@
+{
+  "taxonomy_version": "water_v1_20260726",
+  "prompt_template_version": "pt_v3_water_20260726",
+  "scene_categories": ["general", "water", "urban", "rural"],
+  "legacy_aliases": {"flood": "water"},
+  "definitions": {
+    "water": "水体、岸线或港湾在视觉上占主导",
+    "urban": "建成区、交通、工业和人工设施占主导",
+    "rural": "农业、森林、草地和自然陆地占主导",
+    "general": "混合场景或不适合前三类的其他场景"
+  },
+  "prompt_templates": {
+    "water": "a water-dominated remote-sensing scene",
+    "urban": "an urban or built-up remote-sensing scene",
+    "rural": "a rural or natural-land remote-sensing scene",
+    "general": "a mixed remote-sensing scene"
+  },
+  "groups": {
+    "blanchon/AID": {
+      "water": ["pond", "port", "river", "beach"],
+      "urban": ["commercial", "dense_residential", "industrial",
+                "medium_residential", "parking", "railway_station",
+                "school", "storage_tanks", "church"],
+      "rural": ["bare_land", "farmland", "meadow", "sparse_residential",
+                "forest"],
+      "general": ["airport", "bridge", "center", "desert", "mountain",
+                  "park", "playground", "square", "stadium", "viaduct",
+                  "resort"]
+    },
+    "blanchon/RESISC45": {
+      "water": ["island", "lake", "river", "sea_ice", "wetland", "beach",
+                "harbor"],
+      "urban": ["commercial_area", "dense_residential", "industrial_area",
+                "medium_residential", "parking_lot", "railway_station",
+                "church", "overpass"],
+      "rural": ["chaparral", "circular_farmland", "meadow",
+                "rectangular_farmland", "sparse_residential", "terrace",
+                "forest"],
+      "general": ["airplane", "airport", "bridge", "desert", "mountain",
+                  "palace", "stadium", "freeway"]
+    },
+    "blanchon/PatternNet": {
+      "water": ["river", "harbor", "ferry_terminal", "beach"],
+      "urban": ["dense_residential", "mobile_home_park", "intersection",
+                "crosswalk", "overpass", "parking_lot", "parking_space",
+                "railway", "storage_tank", "transformer_station",
+                "nursing_home", "basketball_court", "tennis_court",
+                "wastewater_treatment_plant", "swimming_pool",
+                "shipping_yard"],
+      "rural": ["sparse_residential", "chaparral", "christmas_tree_farm",
+                "oil_gas_field", "oil_well", "solar_panel", "forest"],
+      "general": ["airplane", "bridge", "freeway", "golf_course", "runway",
+                  "football_field", "baseball_field", "cemetery"]
+    },
+    "jonathan-roberts1/WHU-RS19": {
+      "water": ["pond", "port", "river", "beach"],
+      "urban": ["commercial", "industrial", "parking", "railway_station",
+                "residential"],
+      "rural": ["farmland", "meadow", "forest"],
+      "general": ["airport", "bridge", "desert", "mountain", "park",
+                  "viaduct", "football_field"]
+    }
+  },
+  "_notes": [
+    "v2.5 统一分类学(2026-07-26 用户拍板):flood 更名 water;新样本不再产出 flood tier,",
+    "旧数据读取经 legacy_aliases 归一。跨数据集统一:beach→water、forest→rural、",
+    "pond/river/port/harbor→water、swimming_pool→urban、shipping_yard→urban、resort→general;",
+    "ferry_terminal 按 port/harbor 规则归 water(用户未点名,如异议改此文件)。",
+    "本文件是场景映射唯一真源:builder/检查器/测试全部从此读;改动即变更 taxonomy_version。",
+    "匹配为归一化精确匹配(仅字母数字小写),snake_case 与 CamelCase 自动等价。"
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rswm.benchmark_release_identity/v1",
+  "title": "RSWM-Bench unified release identity v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "benchmark_version",
+    "protocol",
+    "benchmark_spec",
+    "schema_bundle",
+    "evaluator",
+    "manifest",
+    "release_checksum"
+  ],
+  "properties": {
+    "schema": {"const": "rswm.benchmark_release_identity/v1"},
+    "benchmark_version": {"type": "string", "minLength": 1},
+    "protocol": {"$ref": "#/$defs/componentIdentity"},
+    "benchmark_spec": {"$ref": "#/$defs/componentIdentity"},
+    "schema_bundle": {"$ref": "#/$defs/componentIdentity"},
+    "evaluator": {"$ref": "#/$defs/componentIdentity"},
+    "manifest": {"$ref": "#/$defs/componentIdentity"},
+    "model_identity": {"$ref": "urn:rswm:model-identity:v1"},
+    "release_checksum": {"$ref": "#/$defs/sha256"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "componentIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "artifact_id", "schema", "version", "sha256", "status"],
+      "properties": {
+        "kind": {"type": "string", "minLength": 1},
+        "artifact_id": {"type": "string", "minLength": 1},
+        "schema": {"type": "string", "minLength": 1},
+        "version": {"type": "string", "minLength": 1},
+        "sha256": {"anyOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]},
+        "status": {"enum": ["declared", "verified", "not_available"]}
+      }
+    }
+  }
+}

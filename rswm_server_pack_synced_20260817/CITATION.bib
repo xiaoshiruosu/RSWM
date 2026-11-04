@@ -1,0 +1,105 @@
+% =============================================================================
+% CITATION.bib —— RSWM-Bench 占位 BibTeX
+%
+% 与 CITATION.cff 同源。双盲评审期作者字段是占位实体名，**不是编造的姓名**；
+% 去匿名时把 `author` 换成真实作者并同步改 CITATION.cff。
+% 所有 <待确认> 必须在 camera-ready 前替换。
+%
+% 校验方式：CITATION.cff 已用 cffconvert --validate 通过 CFF schema 1.2.0；
+% 本文件是给不读 CFF 的排版流程用的手写版本（cffconvert 自动导出只会给出
+% 信息量不足的 @misc）。
+% =============================================================================
+
+% ---- 主引用：会议论文（投稿中，尚未接收） ----------------------------------
+% ⚠️ 在稿件被接收前，请勿把本条目当作已发表文献引用。
+@inproceedings{rswmbench2027,
+  title     = {{RSWM-Bench}: A Direction-Controllability Benchmark for
+               Remote-Sensing World Models},
+  author    = {The {RSWM-Bench} Authors},        % <待确认> 去匿名后替换
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2027},
+  note      = {Under review. <待确认>: 接收后补 pages / url / OpenReview id},
+}
+
+% ---- 软件 / 数据构建管线（只用代码与建库配方时引这条） ---------------------
+@software{rswmbench_software,
+  title   = {{RSWM-Bench}: benchmark construction and evaluation pipeline},
+  author  = {The {RSWM-Bench} Authors},          % <待确认>
+  year    = {2026},
+  month   = {7},
+  version = {2.9.4},                             % <待确认> 与发布 tag 对齐
+  license = {Apache-2.0},
+  url     = {https://github.com/<待确认>/rswm-bench},
+  note    = {代码 Apache-2.0；原创非代码数据 CC BY 4.0；不分发影像像素，
+             源数据条款见 LICENSE APPENDIX B},
+}
+
+% =============================================================================
+% 源数据集（用了哪个 tier 就引哪一条；许可条款见 LICENSE APPENDIX B）
+% =============================================================================
+
+@article{xia2017aid,
+  title   = {{AID}: A Benchmark Data Set for Performance Evaluation of
+             Aerial Scene Classification},
+  author  = {Xia, Gui-Song and others},
+  journal = {IEEE Transactions on Geoscience and Remote Sensing},
+  volume  = {55},
+  number  = {7},
+  pages   = {3965--3981},
+  year    = {2017},
+}
+
+@article{cheng2017resisc45,
+  title   = {Remote Sensing Image Scene Classification: Benchmark and
+             State of the Art},
+  author  = {Cheng, Gong and Han, Junwei and Lu, Xiaoqiang},
+  journal = {Proceedings of the IEEE},
+  volume  = {105},
+  number  = {10},
+  pages   = {1865--1883},
+  year    = {2017},
+}
+
+@article{zhou2018patternnet,
+  title   = {{PatternNet}: A benchmark dataset for performance evaluation of
+             remote sensing image retrieval},
+  author  = {Zhou, Weixun and others},
+  journal = {ISPRS Journal of Photogrammetry and Remote Sensing},
+  year    = {2018},
+  note    = {<待确认> volume / pages},
+}
+
+@misc{whurs19,
+  title  = {{WHU-RS19} aerial scene dataset},
+  author = {{Wuhan University (LIESMARS)}},
+  note   = {本项目经 Hugging Face 镜像 jonathan-roberts1/WHU-RS19 取用，
+            该镜像声明 CC-BY-4.0（2026-07-29 经 HF API 核实）。
+            <待确认> 上游正式题录},
+}
+
+% =============================================================================
+% 基模（复现训练/评估必须引）
+% =============================================================================
+@misc{lingbot_world_base_cam,
+  title  = {lingbot-world-base-cam: image-to-video world model checkpoint},
+  author = {robbyant},
+  year   = {2026},
+  url    = {https://huggingface.co/robbyant/lingbot-world-base-cam},
+  note   = {Apache-2.0；2026-07-29 经 HF API 核实为公开非 gated。
+            模型卡标签含 arXiv:2601.20540 —— <待确认> 对应论文完整题录},
+}
+
+% =============================================================================
+% Datasheet 体例出处
+% =============================================================================
+@article{gebru2021datasheets,
+  title   = {Datasheets for Datasets},
+  author  = {Gebru, Timnit and Morgenstern, Jamie and Vecchione, Briana and
+             Vaughan, Jennifer Wortman and Wallach, Hanna and
+             Daum{\'e} III, Hal and Crawford, Kate},
+  journal = {Communications of the ACM},
+  volume  = {64},
+  number  = {12},
+  pages   = {86--92},
+  year    = {2021},
+}

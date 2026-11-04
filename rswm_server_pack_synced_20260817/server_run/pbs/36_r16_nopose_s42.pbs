@@ -1,0 +1,48 @@
+#!/bin/bash
+#PBS -P rx40
+#PBS -q gpuhopper
+#PBS -N rswm_36_r16_nopose_s42
+#PBS -l ncpus=12,ngpus=1,mem=128GB,jobfs=100GB,walltime=40:00:00
+#PBS -l storage=scratch/qk73+scratch/rx40
+#PBS -l wd
+#PBS -j oe
+# =============================================================================
+# 36 · 真 no-pose 文本臂(单 seed,r16,pose_mode=drop)
+#
+# 修主对比的釜底抽薪问题:旧稿的 "text-only" 实为【文本 + identity 位姿】——
+# neutralize 把 poses 置恒等后仍喂进【激活的】Plücker 通路,对相机条件预训练
+# 的骨干等于显式命令"相机不动",与 prompt 的方向词直接矛盾;论文里的
+# near-static 失效模式可能部分是这个臂自己造出来的。
+#
+# 本臂 pose_mode=drop:训练与推理都不传 dit_cond_dict(位姿通路整体不激活),
+# 才是真正的 text-only。三臂语义因此固定为:
+#   36 drop      = 文本单通道(真 no-pose)
+#   20 identity  = 静止相机诊断臂(不再称 text-only)
+#   23 native    = 文本 + 真实轨迹 Plücker
+# 依赖:afterok:34 与 01。数据用 GEO_H5(位姿存在但不被使用),避免与
+# identity 臂共用中和 H5 造成 pose_mode 一致性校验冲突。
+# =============================================================================
+_ENVF="${PBS_O_WORKDIR:-$PWD}/server_run/pbs/_pbs_env.sh"
+[ -f "$_ENVF" ] || { echo "FATAL: 找不到 $_ENVF"; exit 1; }
+source "$_ENVF"
+# [v2.10] 评估条数分层:消融/诊断臂用 $N_EVAL_ABLATION(headline 的前缀子集)。
+# 旧版一律 0(=全部 val=100),FVD 的常规做法是 2048+,FID 在 N=100 上基本是噪声。
+# [v2.9.3] 产物角色 —— 进 run_manifest,并参与 headline 资格判定
+export RSWM_RUN_ROLE=diagnostic_stationary
+# [v2.9 拍板] 本臂 = 静止相机【命令】诊断臂:identity 位姿仍走激活的 Plücker
+# 通路(≈显式命令相机不动),**不是** text-only。真 text-only 是 20-22 的 drop。
+# 必须显式声明,不得依赖 _infer_pose_mode 的自动推断 —— 诊断臂的语义是拍板
+# 定的,不能由数据文件的 attr 反向决定。
+export POSE_MODE=identity
+
+if ! done_p p36_train; then
+    train_lora r16_nopose_s42 16 16 "$SEM_H5" "$WORK/train_r16_nopose_s42"
+    stamp p36_train
+fi
+if ! done_p p36_eval; then
+    eval_lora r16_nopose_s42 "$WORK/train_r16_nopose_s42/best_checkpoint" \
+        "$SEM_H5" "$WORK/train_r16_nopose_s42/train_val_split.json" \
+        "$WORK/eval_r16_nopose_s42" "$N_EVAL_ABLATION"
+    stamp p36_eval
+fi
+echo "[ok] 36 真 no-pose 臂完成 → $WORK/eval_r16_nopose_s42"

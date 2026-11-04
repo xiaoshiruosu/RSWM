@@ -1,0 +1,26 @@
+#!/bin/bash
+#PBS -P rx40
+#PBS -q gpuhopper
+#PBS -N rswm_05_train_r16
+#PBS -l ncpus=12,ngpus=1,mem=128GB,jobfs=100GB,walltime=48:00:00
+#PBS -l storage=scratch/qk73+scratch/rx40
+#PBS -l wd
+#PBS -j oe
+# 每个 .pbs = 一个实验。换项目/队列/存储改上面 -P/-q/-l storage;换机器路径改 _pbs_env.sh。
+# 01-19 legacy 作业;当前流程用 qsub_corrected_rerun.sh。手动 qsub 仅用于复现旧结果。
+# [v2.9] 本作业属【已退役的 legacy 链】(SEM_H5 = identity 中和位姿)。
+# 声明 legacy profile 保持 SEM_ARM_MODE=identity 以复现旧数字;
+# 正式 ICLR 矩阵是 20-33/35/36 的 official profile(drop 主线),见 common.sh。
+export RSWM_PROFILE=legacy
+_ENVF="${PBS_O_WORKDIR:-$PWD}/server_run/pbs/_pbs_env.sh"
+[ -f "$_ENVF" ] || { echo "FATAL: 找不到 $_ENVF —— 必须从包根 qsub(缺 -l wd 或提交目录不对)"; exit 1; }
+source "$_ENVF"
+# [v2.9.3] 产物角色 —— 进 run_manifest,并参与 headline 资格判定
+export RSWM_RUN_ROLE=legacy
+
+# Rank 消融训练 r16/α16(语义通道)
+if ! done_p p2_train_r16; then
+    train_lora "r16_sem" 16 16 "$SEM_H5" "$WORK/train_r16_sem"
+    stamp p2_train_r16
+fi
+echo "[ok] r16_sem 训练完成"

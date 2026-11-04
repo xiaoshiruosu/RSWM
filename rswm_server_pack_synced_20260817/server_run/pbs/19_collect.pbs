@@ -1,0 +1,25 @@
+#!/bin/bash
+#PBS -P rx40
+#PBS -q gpuhopper
+#PBS -N rswm_19_collect
+#PBS -l ncpus=12,ngpus=1,mem=128GB,jobfs=100GB,walltime=02:00:00
+#PBS -l storage=scratch/qk73+scratch/rx40
+#PBS -l wd
+#PBS -j oe
+# 每个 .pbs = 一个实验。换项目/队列/存储改上面 -P/-q/-l storage;换机器路径改 _pbs_env.sh。
+# 01-19 legacy 作业;当前流程用 qsub_corrected_rerun.sh。手动 qsub 仅用于复现旧结果。
+_ENVF="${PBS_O_WORKDIR:-$PWD}/server_run/pbs/_pbs_env.sh"
+[ -f "$_ENVF" ] || { echo "FATAL: 找不到 $_ENVF —— 必须从包根 qsub(缺 -l wd 或提交目录不对)"; exit 1; }
+source "$_ENVF"
+
+# 汇总:所有对齐对比(eval_aligned.py 用 GPU 重算对齐区)+ 总表
+run_align() {  # run_align TAG LORADIR BASEDIR OUTDIR
+    if [ -d "$2" ] && [ -d "$3" ]; then aligned "$1" "$2" "$3" "$4"; else echo "[skip] $1: 缺 $2 或 $3"; fi
+}
+# [v2.7.3 ②] legacy 链(02/04)的产物已是显式 eval_r128_sem;$E_MAIN 现指 r16
+# 而 legacy 链无人生产它 → 对齐会被静默跳过。本收集器属 legacy 链,跟随 r128。
+run_align r128_legacy "$WORK/eval_r128_sem" "$E_BASE" "$WORK/aligned_r128_legacy"   # [v2.7.4] 不再冒充 headline
+for R in 16 32 64; do run_align "r${R}" "$WORK/eval_r${R}_sem" "$E_BASE" "$WORK/aligned_r${R}"; done
+run_align r128_geo_legacy "$WORK/eval_r128_geo" "$E_BASE" "$WORK/aligned_r128_geo_legacy"   # [v2.7.4]
+$PY "$ROOT/server_run/collect_results.py" "$WORK"
+echo "[ok] 总表: $WORK/summary.md"

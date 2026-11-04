@@ -1,0 +1,103 @@
+#!/bin/bash
+#PBS -P rx40
+#PBS -q gpuhopper
+#PBS -N rswm_baseline_eval
+#PBS -l ncpus=12,ngpus=1,mem=128GB,jobfs=100GB,walltime=02:00:00
+#PBS -l storage=scratch/qk73+scratch/rx40
+#PBS -l wd
+#PBS -j oe
+# =============================================================================
+# baseline_eval_template.pbs — 按名评估 **一个** baseline(共享 manifest 协议)
+#
+# 用法(必须 -v 传 BL_NAME 和 MANIFEST;WORK 必须换独立目录):
+#   qsub -v BL_NAME=persistence,MANIFEST=/scratch/rx40/$USER/RSWM/baselines/manifest.json,\
+# WORK=/scratch/rx40/$USER/RSWM/work_baselines server_run/pbs/baseline_eval_template.pbs
+#
+#   # 先干跑(登录节点即可,不用排队、不碰 GPU、不落盘):
+#   DRYRUN=1 BL_NAME=persistence MANIFEST=... WORK=... bash server_run/pbs/baseline_eval_template.pbs
+#
+# 可选: SAVE_FRAMES=1 额外存一个 frames.npz(单文件打包,不散小文件)。
+#
+# 设计约定:
+#   - 只写 $WORK/baselines/<BL_NAME>/,**绝不** 碰旧 AID 的 eval 输出/summary/
+#     checkpoint/H5。manifest 里的 h5/split 一律 **只读**。
+#   - WORK 必须是独立根(见下方守卫):旧 AID 结果在默认 work 目录里,不许复用。
+#   - 缺文件/缺依赖一律非零退出,绝不静默兜底。
+#   - 诊断基线其实是纯 CPU(numpy 裁窗),这里仍按 gpuhopper 模板申请 GPU 只是为了
+#     统一作业风格;外部生成式基线(mvsplat360 等)才真的要 GPU。
+# =============================================================================
+_ENVF="${PBS_O_WORKDIR:-$PWD}/server_run/pbs/_pbs_env.sh"
+[ -f "$_ENVF" ] || { echo "FATAL: 找不到 $_ENVF"; exit 1; }
+source "$_ENVF"
+
+# ---- 必填参数 ----
+: "${BL_NAME:?FATAL: 必须指定 BL_NAME(baseline 注册名)。可查: python server_run/baselines/run_baseline.py --list}"
+: "${MANIFEST:?FATAL: 必须指定 MANIFEST(共享 manifest json 路径,见 README_BASELINES.md)}"
+
+DRYRUN="${DRYRUN:-0}"
+SAVE_FRAMES="${SAVE_FRAMES:-0}"
+BL_DIR="$ROOT/server_run/baselines"
+OUT="$WORK/baselines/$BL_NAME"
+
+# ---- 守卫 1:WORK 必须是独立根,不能是旧 AID 主实验的 work ----
+# common.sh:26 的默认 WORK=$ROOT/server_run/work 里躺着旧 AID 的结果。baseline 是
+# 新实验,必须换根(例:WORK=/scratch/rx40/$USER/RSWM/work_baselines)。
+_DEFAULT_WORK="$ROOT/server_run/work"
+if [ "$(readlink -m "$WORK")" = "$(readlink -m "$_DEFAULT_WORK")" ]; then
+    echo "FATAL: WORK=$WORK 是旧 AID 主实验的默认 work 根,禁止在此写新 baseline 产物。"
+    echo "       请显式换独立根,例: qsub -v WORK=/scratch/rx40/\$USER/RSWM/work_baselines,..."
+    exit 1
+fi
+
+# ---- 守卫 2:输出目录已有结果就停,别悄悄覆盖(FORCE=1 显式放行)----
+if [ -s "$OUT/scores.json" ] && [ "${FORCE:-0}" != "1" ]; then
+    echo "FATAL: $OUT/scores.json 已存在。拒绝覆盖已有结果。"
+    echo "       确实要重跑: 加 FORCE=1,或换 WORK/输出目录。"
+    exit 1
+fi
+
+# ---- 守卫 3:代码 + manifest 存在 ----
+[ -d "$BL_DIR" ] || { echo "FATAL: 缺 $BL_DIR"; exit 1; }
+[ -f "$BL_DIR/run_baseline.py" ] || { echo "FATAL: 缺 $BL_DIR/run_baseline.py"; exit 1; }
+[ -f "$MANIFEST" ] || { echo "FATAL: manifest 不存在: $MANIFEST"; exit 1; }
+
+# ---- 守卫 4:manifest 里的 h5/split 必须存在(只读输入)----
+# 注:run_baseline.py 自己也查一遍(它是唯一真相);这里先查是为了让作业在 5 秒内
+# 就因为路径打错而失败,而不是排完队才发现。
+$PY - "$MANIFEST" <<'EOF'
+import json, sys
+from pathlib import Path
+m = json.load(open(sys.argv[1]))
+missing = [k for k in ("h5", "split", "num_frames", "resolution", "gen_seed")
+           if k not in m or m[k] is None]
+if missing:
+    sys.exit(f"FATAL: manifest 缺字段 {missing}")
+for k in ("h5", "split"):
+    if not Path(m[k]).is_file():
+        sys.exit(f"FATAL: manifest.{k} 指向的文件不存在: {m[k]}")
+print(f"[ok] manifest: h5={m['h5']}")
+print(f"[ok] manifest: split={m['split']} res={m['resolution']} "
+      f"frames={m['num_frames']} gen_seed={m['gen_seed']}")
+EOF
+
+EXTRA=()
+[ "$SAVE_FRAMES" = "1" ] && EXTRA+=(--save-frames)
+
+if [ "$DRYRUN" = "1" ]; then
+    echo "===== [DRYRUN] baseline=$BL_NAME → $OUT ====="
+    $PY "$BL_DIR/run_baseline.py" \
+        --baseline "$BL_NAME" --manifest "$MANIFEST" --out "$OUT" \
+        "${EXTRA[@]}" --dryrun
+    echo "[dryrun] 通过:没有生成、没有打分、没有落盘。"
+    exit 0
+fi
+
+echo "===== [baseline:$BL_NAME] → $OUT ====="
+mkdir -p "$OUT"
+$PY "$BL_DIR/run_baseline.py" \
+    --baseline "$BL_NAME" --manifest "$MANIFEST" --out "$OUT" \
+    "${EXTRA[@]}" 2>&1 | tee "$LOGS/baseline_${BL_NAME}.log"
+
+# tee 会吃掉退出码,显式检查产物
+[ -s "$OUT/scores.json" ] || { echo "FATAL: 没产出 $OUT/scores.json,评估失败"; exit 1; }
+echo "[ok] baseline $BL_NAME 完成 → $OUT/scores.json"

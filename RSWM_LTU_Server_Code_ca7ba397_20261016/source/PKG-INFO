@@ -1,0 +1,27 @@
+Metadata-Version: 2.4
+Name: rswm-inria-120
+Version: 0.2.0
+Summary: Deterministic compact remote-sensing spatial-query benchmark
+Requires-Python: >=3.10
+License-File: NOTICE.md
+Requires-Dist: numpy<3,>=1.24
+Requires-Dist: Pillow<13,>=10
+Provides-Extra: dev
+Requires-Dist: pytest<10,>=8; extra == "dev"
+Provides-Extra: data
+Requires-Dist: huggingface-hub<2,>=0.24; extra == "data"
+Requires-Dist: tifffile>=2024.1.1; extra == "data"
+Provides-Extra: motion
+Requires-Dist: scipy<2,>=1.10; extra == "motion"
+Provides-Extra: features
+Requires-Dist: torch>=2.2; extra == "features"
+Provides-Extra: probes
+Requires-Dist: pyarrow>=14; extra == "probes"
+Provides-Extra: isolation
+Provides-Extra: generate
+Requires-Dist: torch>=2.2; extra == "generate"
+Requires-Dist: diffusers>=0.30; extra == "generate"
+Requires-Dist: transformers>=4.44; extra == "generate"
+Requires-Dist: accelerate>=0.33; extra == "generate"
+Requires-Dist: safetensors>=0.4; extra == "generate"
+Dynamic: license-file

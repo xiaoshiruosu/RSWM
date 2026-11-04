@@ -1,0 +1,17 @@
+{
+  "schema": "rsroll.baseline_card/v1",
+  "name": "persistence",
+  "source": "local diagnostic baseline",
+  "checkpoint": null,
+  "native_input": "one condition image plus requested frame count; trajectory is ignored",
+  "native_output": "T-frame constant rollout",
+  "number_of_condition_views": 1,
+  "uses_camera_pose": false,
+  "uses_future_gt": false,
+  "training_data": "none",
+  "adaptation": "repeat condition image",
+  "notes": "Lower bound and metric sanity check; not expected to follow trajectory.",
+  "trajectory_support": "ignored",
+  "comparison_track": "fully_comparable_single_image",
+  "main_table_eligible": true
+}

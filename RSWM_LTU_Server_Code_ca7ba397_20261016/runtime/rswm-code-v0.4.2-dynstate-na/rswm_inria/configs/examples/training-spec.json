@@ -1,0 +1,1 @@
+{"updates":null,"batch_size":null,"accumulation":null,"lr":null,"seed":null,"precision":"bf16","device":"cuda:0","camera":"camera.json","trainable_policy":{"mode":null,"rank":null,"alpha":null,"targets":null,"gradient_checkpointing":null},"checkpoint_every":null,"backend_manifest":null}

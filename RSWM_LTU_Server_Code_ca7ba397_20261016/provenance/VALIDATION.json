@@ -1,0 +1,12 @@
+{
+  "status": "STATIC_AND_SOURCE_IDENTITY_PASS",
+  "source_identity_match": true,
+  "runtime_python_files": 54,
+  "ast_parsed_python_files": 247,
+  "retained_source_files": 250,
+  "runtime_python_identity_independently_recomputed_in_python": true,
+  "all_intermediate_fingerprints_matched": true,
+  "gpu_or_model_execution": false,
+  "full_test_suite_rerun": false,
+  "live_server_filesystem_comparison": false
+}

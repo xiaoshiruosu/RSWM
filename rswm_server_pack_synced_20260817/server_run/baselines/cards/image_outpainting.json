@@ -1,0 +1,18 @@
+{
+  "schema": "rsroll.baseline_card/v1",
+  "name": "image_outpainting",
+  "source": "https://huggingface.co/stabilityai/stable-diffusion-2-inpainting",
+  "checkpoint": "stabilityai/stable-diffusion-2-inpainting or RSWM_INPAINT_MODEL",
+  "native_input": "condition image and inpainting mask",
+  "native_output": "single inpainted image",
+  "number_of_condition_views": 1,
+  "uses_camera_pose": false,
+  "uses_future_gt": false,
+  "training_data": "upstream checkpoint training data; not modified in this repository",
+  "adaptation": "RS-Roll sequential translate-and-inpaint rollout",
+  "notes": "Continuous video is not native output. Record inference steps, seed and preprocessing before evaluation.",
+  "trajectory_support": "adapted from requested trajectory direction",
+  "comparison_track": "adapted_image_extrapolation",
+  "main_table_eligible": true,
+  "runtime_status": "NOT RUN with real checkpoint"
+}

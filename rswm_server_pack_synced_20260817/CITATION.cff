@@ -1,0 +1,104 @@
+# =============================================================================
+# CITATION.cff —— Citation File Format 1.2.0
+#
+# 为什么作者字段是占位实体名而不是真名：本仓库对应的稿件处于 ICLR 双盲
+# 评审期。CFF 规范要求 `authors` 非空，实体形式（只给 `name`）是合法的，
+# 因此这里用实体占位，**而不是编造姓名**。定稿去匿名时，把 `authors` 换成
+# person 形式（`family-names` / `given-names` / `orcid`），并同步改
+# CITATION.bib 与 README。
+#
+# 所有 <待确认> 项必须在 camera-ready 前替换：DOI、正式作者、版本号、
+# 发布日期、仓库 URL。
+# =============================================================================
+cff-version: 1.2.0
+message: "如果你使用了 RSWM-Bench，请引用下面的会议论文；只用代码/数据构建管线时，引用本软件条目。"
+title: "RSWM-Bench: 遥感世界模型的方向可控性基准"
+abstract: >-
+  RSWM-Bench 用于测量视频世界模型在遥感影像上的方向指令跟随能力，并把
+  文本条件通道与 Plücker 相机位姿条件通道放在同一评估协议下对比。数据由
+  静态高分辨率遥感影像上的确定性滑窗轨迹合成，方向由光流独立反解而非模型
+  自评。本仓库分发建库配方、评估协议与审计元数据，不分发影像像素。
+type: software
+authors:
+  # 双盲期占位实体；去匿名时替换为 person 条目。见文件头说明。
+  - name: "The RSWM-Bench Authors"
+version: "2.9.4"          # <待确认> 与 run_manifest MANIFEST_VERSION(2.9.2) 不是同一物：
+                          # 前者是发布版本，后者是产物身份 schema 版本。定稿前统一编号方案。
+date-released: "2026-07-29"   # <待确认> 以实际发布日为准
+license: Apache-2.0
+license-url: "https://github.com/<待确认>/rswm-bench/blob/main/LICENSE"
+repository-code: "https://github.com/<待确认>/rswm-bench"
+url: "https://github.com/<待确认>/rswm-bench"
+keywords:
+  - remote sensing
+  - world model
+  - video diffusion
+  - camera control
+  - benchmark
+  - reproducibility
+
+references:
+  # 源数据集。许可条款逐条见 LICENSE 的 APPENDIX B（含"待确认"标注）。
+  - type: article
+    title: "AID: A Benchmark Data Set for Performance Evaluation of Aerial Scene Classification"
+    authors:
+      - family-names: Xia
+        given-names: Gui-Song
+      - name: "et al."
+    journal: "IEEE Transactions on Geoscience and Remote Sensing"
+    volume: 55
+    issue: 7
+    start: 3965
+    end: 3981
+    year: 2017
+  - type: article
+    title: "Remote Sensing Image Scene Classification: Benchmark and State of the Art"
+    authors:
+      - family-names: Cheng
+        given-names: Gong
+      - family-names: Han
+        given-names: Junwei
+      - family-names: Lu
+        given-names: Xiaoqiang
+    journal: "Proceedings of the IEEE"
+    volume: 105
+    issue: 10
+    start: 1865
+    end: 1883
+    year: 2017
+  - type: article
+    title: "PatternNet: A benchmark dataset for performance evaluation of remote sensing image retrieval"
+    authors:
+      - family-names: Zhou
+        given-names: Weixun
+      - name: "et al."
+    journal: "ISPRS Journal of Photogrammetry and Remote Sensing"
+    year: 2018
+  - type: generic
+    title: "WHU-RS19 aerial scene dataset"
+    authors:
+      - name: "Wuhan University (LIESMARS)"
+    notes: >-
+      本项目通过 Hugging Face 镜像 jonathan-roberts1/WHU-RS19 取用；
+      该镜像声明 CC-BY-4.0（2026-07-29 经 HF API 核实）。上游卷号/页码 <待确认>。
+  - type: software
+    title: "lingbot-world-base-cam (base video world model checkpoint)"
+    authors:
+      - name: "robbyant"
+    url: "https://huggingface.co/robbyant/lingbot-world-base-cam"
+    license: Apache-2.0
+    notes: >-
+      训练与评估的唯一模型源。2026-07-29 经 HF API 核实：gated=false、
+      private=false、license=apache-2.0；模型卡标签含 arxiv:2601.20540。
+      对应论文的完整题录 <待确认>。
+
+preferred-citation:
+  type: conference-paper
+  title: "RSWM-Bench: 遥感世界模型的方向可控性基准"
+  authors:
+    - name: "The RSWM-Bench Authors"
+  collection-title: "International Conference on Learning Representations (ICLR)"
+  year: 2027
+  notes: >-
+    <待确认> 投稿中，尚未被接收。在稿件被接收前，请勿把本条目当作已发表
+    文献引用；引用时注明 "under review at ICLR 2027" 或直接引用本仓库。

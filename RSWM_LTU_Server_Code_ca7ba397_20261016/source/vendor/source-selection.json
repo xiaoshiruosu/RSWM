@@ -1,0 +1,12 @@
+{
+  "original_source_zip_sha256": "2d079e768bdf66a06cc7cb8891f408c7adbcb1985424b801fa962da97400ce73",
+  "selected_source_root": "D:\\Users\\25828\\Documents\\ChatGPT\\lora 2\\work\\rswm_ddc_continuation\\source\\rswm_inria_120-0.2.0\\vendor\\legacy-original",
+  "selected_files": 54,
+  "selected_bytes": 702613,
+  "selected_inventory_sha256": "45942e82679008c824a0ccf4dca04116a91ca9aab08c9f4bec750c941e846a4a",
+  "excluded_provider_subtree": "lora_remotesense/new/wan/remotesensebenchmark/",
+  "excluded_file_count": 37,
+  "excluded_values_recorded": false,
+  "weights_included": false,
+  "source_use_approval_inferred": false
+}

@@ -1,0 +1,53 @@
+#!/bin/bash
+#PBS -P rx40
+#PBS -q gpuhopper
+#PBS -N rswm_31_eval_base
+#PBS -l ncpus=12,ngpus=1,mem=128GB,jobfs=100GB,walltime=24:00:00
+#PBS -l storage=scratch/qk73+scratch/rx40
+#PBS -l wd
+#PBS -j oe
+# 档2 修正-prompt 重跑(2026-07-11)。先重跑 01(新 builder=修正prompt+waypoints)。
+# train+eval 融合;eval 读本作业自己的 split(SPLIT_SEED=42 确定性→各配置 split 相同)→ 全并行。
+_ENVF="${PBS_O_WORKDIR:-$PWD}/server_run/pbs/_pbs_env.sh"
+[ -f "$_ENVF" ] || { echo "FATAL: 找不到 $_ENVF"; exit 1; }
+source "$_ENVF"
+# [v2.9.4] 产物角色 —— 进 run_manifest,并参与 headline 资格判定
+export RSWM_RUN_ROLE=baseline
+# =============================================================================
+# [v2.9 拍板 2026-07-29] baseline 必须【按模式分别评估】。
+#
+# 三个臂的条件通路不同:drop 完全不接位姿通路,native 走真实轨迹 Plücker,
+# identity 走激活的 Plücker 通路但命令相机不动。共用一份 baseline 会让
+# Δ(LoRA − base) 里混进"位姿通路开/关"这个额外变量 —— 而 20-22↔23-25 的
+# headline 对比,存在的全部意义就是单变量。
+#
+# 产物:eval_base_drop / eval_base_native / eval_base_identity
+# 对应:20-22,26,28,30,35 → drop;23-25,27,29,32,33 → native;36 → identity
+# =============================================================================
+SPLIT="$WORK/train_r16_sem_s42/train_val_split.json"
+[ -f "$SPLIT" ] || { echo "FATAL: 缺 $SPLIT(20 号还没跑完?)"; exit 1; }
+
+# drop / native 臂都用 GEO_H5(正式矩阵已统一);identity 诊断臂用 SEM_H5。
+# H5 必须与该模式下 LoRA 臂用的同一份,否则 Δ 的分母都不同源。
+for _spec in "drop:$GEO_H5" "native:$GEO_H5" "identity:$SEM_H5"; do
+    _m="${_spec%%:*}"; _h5="${_spec#*:}"
+    if [ ! -f "$_h5" ]; then
+        echo "FATAL: $_m baseline 需要的 H5 不存在: $_h5"; exit 1
+    fi
+    if ! done_p "p_ev_base_$_m"; then
+        echo "===== baseline / pose_mode=$_m =====" 
+        POSE_MODE="$_m" eval_base "base_$_m" "$_h5" "$SPLIT" "$WORK/eval_base_$_m" 0
+        stamp "p_ev_base_$_m"
+    fi
+done
+
+# 兼容旧路径:collect_results / eval_aligned 的历史 spec 找 $WORK/eval_base。
+# 指向 headline 的 drop 基线,并留一个说明文件,避免有人以为它是"唯一 baseline"。
+if [ ! -e "$WORK/eval_base" ]; then
+    ln -s "eval_base_drop" "$WORK/eval_base" 2>/dev/null || true
+    printf '%s\n' \
+        "本目录是 eval_base_drop 的别名(v2.9 起 baseline 按 pose_mode 分三份)。" \
+        "drop=20-22/26/28/30/35 的对照;native=23-25/27/29/32/33;identity=36。" \
+        "禁止用一份 baseline 去减不同模式的臂。" > "$WORK/eval_base_ALIAS_README.txt"
+fi
+echo "[ok] baseline 三模式评估完成(drop / native / identity)"

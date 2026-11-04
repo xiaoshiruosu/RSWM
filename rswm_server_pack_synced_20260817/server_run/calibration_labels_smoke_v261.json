@@ -1,0 +1,87 @@
+{
+  "_source_h5": "/scratch/rx40/zz1230/RSWM_D4_smoke_v261_20260727_015122/smoke/smoke_geo.h5",
+  "_human_check_date": "2026-07-28",
+  "_note": "P0 人检真值:仅 00009(water/River 裁剪后几乎全草地/湿地)与 00011(urban/StorageTanks 储罐完全离开裁剪区)无效;general 00000-00004 有效且不参与语义门。",
+  "samples": {
+    "sample_00000": {
+      "category": "general",
+      "valid": true
+    },
+    "sample_00001": {
+      "category": "general",
+      "valid": true
+    },
+    "sample_00002": {
+      "category": "general",
+      "valid": true
+    },
+    "sample_00003": {
+      "category": "general",
+      "valid": true
+    },
+    "sample_00004": {
+      "category": "general",
+      "valid": true
+    },
+    "sample_00005": {
+      "category": "water",
+      "valid": true
+    },
+    "sample_00006": {
+      "category": "water",
+      "valid": true
+    },
+    "sample_00007": {
+      "category": "water",
+      "valid": true
+    },
+    "sample_00008": {
+      "category": "water",
+      "valid": true
+    },
+    "sample_00009": {
+      "category": "water",
+      "valid": false
+    },
+    "sample_00010": {
+      "category": "urban",
+      "valid": true
+    },
+    "sample_00011": {
+      "category": "urban",
+      "valid": false
+    },
+    "sample_00012": {
+      "category": "urban",
+      "valid": true
+    },
+    "sample_00013": {
+      "category": "urban",
+      "valid": true
+    },
+    "sample_00014": {
+      "category": "urban",
+      "valid": true
+    },
+    "sample_00015": {
+      "category": "rural",
+      "valid": true
+    },
+    "sample_00016": {
+      "category": "rural",
+      "valid": true
+    },
+    "sample_00017": {
+      "category": "rural",
+      "valid": true
+    },
+    "sample_00018": {
+      "category": "rural",
+      "valid": true
+    },
+    "sample_00019": {
+      "category": "rural",
+      "valid": true
+    }
+  }
+}

@@ -1,0 +1,101 @@
+{
+  "schema": "rswm.iclr_experiment_matrix/v1",
+  "task": {
+    "name": "Continuous Trajectory-conditioned Remote Sensing Video Rollout",
+    "prediction_semantics": "spatial camera rollout from one observed frame",
+    "not_claimed": "future temporal dynamics prediction",
+    "backbone": "Wan/LingBot I2V Video DiT",
+    "condition_frames": 1,
+    "fidelity_scope": "predicted_frames_only"
+  },
+  "protocol": {
+    "profile": "official",
+    "prompt_schema": "net_continuous",
+    "path_estimator": "registration",
+    "dataset_tier": "aid",
+    "pose_mode": "native",
+    "split_policy": "source-disjoint train/val/test; hidden test excluded from training",
+    "seeds": [42, 43, 44],
+    "headline_eval_n": 400,
+    "distribution_metric_min_n": 32
+  },
+  "adaptation": {
+    "primary": {
+      "kind": "lora",
+      "rank": 16,
+      "alpha": 16,
+      "targets": "attn_cam",
+      "pose_mode": "native"
+    },
+    "frozen_baseline": {
+      "kind": "frozen",
+      "runner": "evaluate_baseline.py",
+      "runnable": true
+    },
+    "rank_sweep": {
+      "ranks": [4, 8, 16, 32, 64],
+      "alpha_rule": "alpha_equals_rank",
+      "targets": "attn_cam",
+      "pose_mode": "native",
+      "seed": 42
+    },
+    "target_ablation": {
+      "rank": 16,
+      "alpha": 16,
+      "targets": ["attn_only", "attn_cam", "all"],
+      "pose_mode": "native",
+      "seed": 42
+    },
+    "matched_pose_target_ablation": {
+      "rank": 16,
+      "alpha": 16,
+      "pose_modes": ["native", "drop"],
+      "targets": ["attn_only", "attn_cam"],
+      "seed": 42,
+      "fixed_fields": [
+        "training_data", "split", "training_steps", "batch_size",
+        "evaluation_manifest", "frame_counts", "seed_protocol"
+      ]
+    },
+    "full_finetuning": {
+      "kind": "full",
+      "runnable": false,
+      "status": "not_implemented",
+      "reason": "two 14B experts require a separately validated FSDP/ZeRO recipe; the current LoRA optimizer/offload path is not a valid full-FT baseline"
+    }
+  },
+  "benchmark_tracks": {
+    "overlap_curve": {
+      "definition": "overlap(condition frame t=0, predicted frame t)",
+      "anchors_pct": [80, 50, 30, 10, 5],
+      "edges_pct": [100, 65, 40, 20, 7.5, 0],
+      "adjacent_step_overlap": "reported separately as a continuity audit; never conflated with condition overlap"
+    },
+    "long_horizon": {
+      "frame_counts": [17, 25, 33],
+      "definition": "total clip frames including one condition frame",
+      "report": ["per_frame_curve", "prefix_aggregate", "exact_length_cohorts"]
+    },
+    "generalization": {
+      "train": "aid",
+      "test_only": ["whurs19", "resisc45"],
+      "cross_dataset_duplicate_gate": true,
+      "note": "no retraining on target tier in the cross-domain table"
+    }
+  },
+  "metrics": {
+    "fidelity": ["SSIM", "PSNR", "LPIPS", "FID"],
+    "video_distribution": ["FVD_I3D"],
+    "control_geometry_proxies": [
+      "net_direction_error",
+      "segment_angular_mean",
+      "turn_recall",
+      "turn_precision",
+      "waypoint_error",
+      "frechet",
+      "dtw",
+      "flow_magnitude"
+    ],
+    "claim_guard": "optical-flow/registration trajectory metrics are geometry-consistency proxies, not proof of explicit 3D geometry awareness"
+  }
+}

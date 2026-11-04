@@ -1,0 +1,29 @@
+#!/bin/bash
+#PBS -P rx40
+#PBS -q gpuhopper
+#PBS -N rswm_04_eval_r128_sem
+#PBS -l ncpus=12,ngpus=1,mem=128GB,jobfs=100GB,walltime=12:00:00
+#PBS -l storage=scratch/qk73+scratch/rx40
+#PBS -l wd
+#PBS -j oe
+# 每个 .pbs = 一个实验。换项目/队列/存储改上面 -P/-q/-l storage;换机器路径改 _pbs_env.sh。
+# 01-19 legacy 作业;当前流程用 qsub_corrected_rerun.sh。手动 qsub 仅用于复现旧结果。
+# [v2.9] legacy 链(02-12 用 SEM_H5=identity 中和位姿或其产物)。
+# 声明 legacy profile 保持 identity 口径复现旧数字;正式 ICLR 矩阵见 20-36。
+export RSWM_PROFILE=legacy
+_ENVF="${PBS_O_WORKDIR:-$PWD}/server_run/pbs/_pbs_env.sh"
+[ -f "$_ENVF" ] || { echo "FATAL: 找不到 $_ENVF —— 必须从包根 qsub(缺 -l wd 或提交目录不对)"; exit 1; }
+source "$_ENVF"
+# [v2.9.4] 产物角色 —— 进 run_manifest,并参与 headline 资格判定
+export RSWM_RUN_ROLE=legacy
+
+# LoRA r128 全 val 评估
+# [v2.7.2 ②] 02 号改写显式 r128 目录,本评估跟随(勿再取 r16 命名的 T_MAIN)
+T_R128="$WORK/train_r128_sem"
+SPLIT="$T_R128/train_val_split.json"
+[ -f "$SPLIT" ] || { echo "FATAL: 缺 $SPLIT(先跑 02)"; exit 1; }
+if ! done_p p1_evallora; then
+    eval_lora r128_sem "$T_R128/best_checkpoint" "$SEM_H5" "$SPLIT" "$WORK/eval_r128_sem" 0
+    stamp p1_evallora
+fi
+echo "[ok] r128_sem 评估完成: $WORK/eval_r128_sem"

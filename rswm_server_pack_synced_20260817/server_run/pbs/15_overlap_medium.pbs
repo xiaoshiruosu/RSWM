@@ -1,0 +1,45 @@
+#!/bin/bash
+#PBS -P rx40
+#PBS -q gpuhopper
+#PBS -N rswm_15_ov_medium
+#PBS -l ncpus=12,ngpus=1,mem=128GB,jobfs=100GB,walltime=08:00:00
+#PBS -l storage=scratch/qk73+scratch/rx40
+#PBS -l wd
+#PBS -j oe
+# 每个 .pbs = 一个实验。换项目/队列/存储改上面 -P/-q/-l storage;换机器路径改 _pbs_env.sh。
+# 01-19 legacy 作业;当前流程用 qsub_corrected_rerun.sh。手动 qsub 仅用于复现旧结果。
+_ENVF="${PBS_O_WORKDIR:-$PWD}/server_run/pbs/_pbs_env.sh"
+[ -f "$_ENVF" ] || { echo "FATAL: 找不到 $_ENVF —— 必须从包根 qsub(缺 -l wd 或提交目录不对)"; exit 1; }
+source "$_ENVF"
+# [v2.9.4] 产物角色 —— 进 run_manifest,并参与 headline 资格判定
+export RSWM_PROFILE=legacy
+export RSWM_RUN_ROLE=legacy
+
+# Overlap 消融 —— medium 档:build(拒绝采样25/scene)→ convert 480x832 → LoRA@$OVERLAP_N + baseline@$OVERLAP_N
+LEVEL=medium
+LDIR="$OVBASE/$LEVEL"; BENCH_H5="$LDIR/benchmark/benchmark.h5"; DATA_H5="$LDIR/eval_data.h5"; SPLIT="$LDIR/split.json"
+LORA_CKPT="$WORK/train_r128_sem/best_checkpoint"   # [v2.7.2 ②] 跟随 02 号显式目录
+[ -d "$LORA_CKPT" ] || { echo "FATAL: 缺 $LORA_CKPT(先跑 02_train_r128_sem)"; exit 1; }
+mkdir -p "$LDIR"
+if ! done_p "p4_build_$LEVEL"; then
+    ( cd "$ROOT" && $PY lora_remotesense/build_overlap_benchmark.py \
+        --output-base "$OVBASE" --instances-per-scene 25 --seed "$SEED" \
+        --dataset-tier "$DATASET_TIER" --levels "$LEVEL" \
+        ${LOCAL_AID_DIR:+--local-aid-dir "$LOCAL_AID_DIR"} ) 2>&1 | tee "$LOGS/p4_build_$LEVEL.log"
+    stamp "p4_build_$LEVEL"
+fi
+if ! done_p "p4_convert_$LEVEL"; then
+    ( cd "$ROOT" && $PY -c "import sys; sys.path.insert(0,'.'); from lora_remotesense.build_dataset_from_benchmark import convert_benchmark_to_lingbot; convert_benchmark_to_lingbot('$BENCH_H5','$DATA_H5',target_size=(480,832))" ) 2>&1 | tee "$LOGS/p4_convert_$LEVEL.log"
+    NSAMP=$($PY -c "import h5py; f=h5py.File('$DATA_H5','r'); print(len(f['data'].keys())); f.close()")
+    $PY -c "import json; json.dump({'train_indices':[], 'val_indices':list(range($NSAMP))}, open('$SPLIT','w'))"
+    echo "$LEVEL: $NSAMP samples"; stamp "p4_convert_$LEVEL"
+fi
+if ! done_p "p4_lora_$LEVEL"; then
+    eval_lora "ov_${LEVEL}_lora" "$LORA_CKPT" "$DATA_H5" "$SPLIT" "$LDIR/eval_lora" "$OVERLAP_N"
+    stamp "p4_lora_$LEVEL"
+fi
+if ! done_p "p4_base_$LEVEL"; then
+    eval_base "ov_${LEVEL}" "$DATA_H5" "$SPLIT" "$LDIR/eval_baseline" "$OVERLAP_N"
+    stamp "p4_base_$LEVEL"
+fi
+echo "[ok] overlap $LEVEL 完成"

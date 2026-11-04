@@ -1,0 +1,336 @@
+#!/bin/bash
+#PBS -P rx40
+#PBS -q normal
+#PBS -N rswm_50_ladder_build
+# mem 是 48GB 而不是照抄 01 号的 128GB:normal 队列按 4GB/core 配比,12 核要 128GB
+# 会被拒(得申请 32 核纯浪费)。48GB 对建库足够 —— builder 流式写入,每场景常驻
+# instances_per_scene 个样本,单样本 ≈ 33帧×128×222×3 + full_scene 512²×3 ≈ 3.6MB,
+# 75 样本/场景 ≈ 270MB 量级。
+#PBS -l ncpus=12,mem=48GB,jobfs=100GB,walltime=20:00:00
+#PBS -l storage=scratch/qk73+scratch/rx40
+#PBS -l wd
+#PBS -j oe
+# =============================================================================
+# 50_ladder_build.pbs — 难度阶梯:按 server_run/ladder_spec.json 批量建各档数据集
+#
+# 为什么是【纯 CPU】队列:建库是 CPU/IO 密集(AID 裁帧 + 拒绝采样),唯一会用卡的
+# 是语义门的 CLIP 打分,而它在 CPU 上也能跑(01 号注释:全量 500 样本多花 15-30 分钟)。
+# 阶梯要建 11 档 × 300 = 3300 样本,占一张 H200 好几个小时纯粹是浪费 —— 而 GPU 卡
+# 恰恰是 51 号阵列作业的瓶颈资源。
+#
+# 为什么每档【单独一个 H5】而不是建一个大库再切:三个旋钮都作用在【建库期】
+# (段数决定帧数、角度量化决定 waypoint 采样、overlap 决定拒绝采样),事后切不出来。
+#
+# 前置:无(不依赖 01)。阶梯是独立 profile,自己的 overlap 带、自己的 WORK 子树,
+#      绝不与主 benchmark 混库。
+#
+# 用法(包根):
+#   qsub -v LADDER_ROOT=/scratch/rx40/$USER/rswm_ladder server_run/pbs/50_ladder_build.pbs
+#   # 或由 server_run/pbs/qsub_ladder.sh 编排提交(推荐,带干跑)
+# 可选 -v: LADDER_N=300(覆盖 spec 的 n_build) LADDER_SPEC=<别的 spec 路径>
+#          LADDER_ONLY=R4_k2_q4_ovH,R5_...(只建指定档,排障用)
+#          KEEP_TMP_BENCH=1(保留 tmp,默认建完即删)
+# =============================================================================
+_ENVF="${PBS_O_WORKDIR:-$PWD}/server_run/pbs/_pbs_env.sh"
+[ -f "$_ENVF" ] || { echo "FATAL: 找不到 $_ENVF —— 必须从包根 qsub(缺 -l wd 或提交目录不对)"; exit 1; }
+source "$_ENVF"
+# 产物角色 —— 进 run_manifest,并参与 headline 资格判定。理由见 ladder_spec.json 的 _why_role。
+export RSWM_RUN_ROLE=ladder
+
+# =============================================================================
+# profile:不 export,只断言。
+# 阶梯跑的是 official 口径,而 official 本来就是 common.sh 的默认值 —— 在 source 之后
+# 再 export 一次是【有害的】:common.sh 早已用 source 时刻的 RSWM_PROFILE 算出了
+# RSWM_PROFILE_ELIGIBLE 并 export 出去。若有人从环境里传进 legacy,此处的覆写只会让
+# RSWM_PROFILE 与 RSWM_PROFILE_ELIGIBLE 分叉(profile 显示 official、资格却按 legacy 算),
+# 而 manifest 记的是分叉后的字符串。所以:发现不是 official 就当场死,不悄悄改。
+# =============================================================================
+if [ "${RSWM_PROFILE:-}" != "official" ]; then
+    echo "FATAL: 阶梯必须在 official profile 下建库,当前 RSWM_PROFILE=${RSWM_PROFILE:-<空>}。" >&2
+    echo "       (不在这里覆写:common.sh 已按 source 时刻的值算好 RSWM_PROFILE_ELIGIBLE," >&2
+    echo "        事后 export 会让两者分叉。请在 qsub 环境里去掉 RSWM_PROFILE 覆盖。)" >&2
+    exit 1
+fi
+
+SPEC="${LADDER_SPEC:-$ROOT/server_run/ladder_spec.json}"
+[ -f "$SPEC" ] || { echo "FATAL: 缺 spec $SPEC" >&2; exit 1; }
+LADDER_ROOT="${LADDER_ROOT:-$WORK/ladder}"
+mkdir -p "$LADDER_ROOT"
+
+# ---- 阶梯数据绝不可落进主 WORK 的 data/ ----
+# 主库(train_geo.h5 / train_semantic.h5)是 headline 的唯一数据源,阶梯的高重叠/
+# 四方向数据一旦混进去,主表就在一个更容易的分布上被评了,而且完全无症状。
+_abs() { python3 -c "import os,sys;print(os.path.realpath(sys.argv[1]))" "$1" 2>/dev/null || echo "$1"; }
+if [ "$(_abs "$LADDER_ROOT")" = "$(_abs "$DATA_DIR")" ]; then
+    echo "FATAL: LADDER_ROOT 指向主库目录 $DATA_DIR —— 拒绝执行。" >&2; exit 1
+fi
+
+# ---- overlap 硬约束必须 enforce ----
+# 每档的 overlap 带是【预注册】的,不是统计倾向。关掉 enforce 的话,"第 k 档比
+# 第 k+1 档重叠高"这句话就没有产物级证据,整条难度曲线的 overlap 轴不成立。
+export RSWM_ENFORCE_OVERLAP=1
+# 实测(spec.feasibility_study)连续角档轨迹接受率仅 0.15-0.50,默认 12 次重采有
+# 8-13% 概率白耗一张源图;而拒一条轨迹只算首末帧 bounds(不裁帧、不过语义门),
+# 极便宜。提高重采上限比消耗源池划算。
+export RSWM_TRAJ_MAX_TRIES="${RSWM_TRAJ_MAX_TRIES:-32}"
+
+echo "[50] SPEC=$SPEC"
+echo "[50] LADDER_ROOT=$LADDER_ROOT"
+echo "[50] TIER=$DATASET_TIER  ENFORCE_OVERLAP=$RSWM_ENFORCE_OVERLAP  TRAJ_MAX_TRIES=$RSWM_TRAJ_MAX_TRIES"
+
+# ---- 容量/inode 预检(11 档 × 300 样本,H5 与 tmp 都不小)----
+source "${PBS_O_WORKDIR:-$PWD}/server_run/pbs/_quota_preflight.sh"
+quota_preflight "$LADDER_ROOT" 200 20000 || exit 1
+
+# =============================================================================
+# spec → 每档一行 TSV。字段顺序在 51 号与 qsub_ladder.sh 里必须一致 ——
+# 三处都用同一段 python(改一处要改三处;plan.tsv 是运行期唯一真源)。
+# 同时做【建库前】的静态校验:帧数契约与 overlap 区间合法性。任何一档不过,
+# 整个作业当场死 —— 建到第 7 档才发现第 9 档参数非法,前面 6 小时就白烧了。
+# =============================================================================
+PLAN="$LADDER_ROOT/plan.tsv"
+$PY - "$SPEC" "$PLAN" "${LADDER_N:-}" <<'PYPLAN'
+import json, sys
+from pathlib import Path
+
+spec = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+out_p, n_override = Path(sys.argv[2]), sys.argv[3].strip()
+proto = spec["protocol"]
+steps = int(proto["steps"])
+rungs = spec["rungs"]
+
+bad = []
+for i, r in enumerate(rungs):
+    rid = r["id"]
+    if int(r["index"]) != i:
+        bad.append(f"{rid}: index={r['index']} 与数组位置 {i} 不符 —— "
+                   f"51 号按 $PBS_ARRAY_INDEX 取第 i 个,错位会静默训错档")
+    lo, hi = float(r["min_overlap_ratio"]), float(r["max_overlap_ratio"])
+    if not (0.0 <= lo < hi <= 1.0):
+        bad.append(f"{rid}: overlap 区间非法 [{lo}, {hi})")
+    kmin, kmax = int(r["min_segments"]), int(r["max_segments"])
+    if kmin < 1 or kmin > kmax:
+        bad.append(f"{rid}: 段数范围非法 K∈[{kmin},{kmax}]")
+    # 帧数契约:T = steps + (K-1)*(steps-1),必须 ≡1 (mod 4)(VAE 时间下采样 4×)
+    frames = [steps + (k - 1) * (steps - 1) for k in range(kmin, kmax + 1)]
+    off = [t for t in frames if (t - 1) % 4 != 0]
+    if off:
+        bad.append(f"{rid}: K∈[{kmin},{kmax}] steps={steps} → T={frames},"
+                   f"其中 {off} 不满足 4n+1,训练侧 _collate_fn 会拒收整个数据集")
+    if list(r.get("frames") or []) != frames:
+        bad.append(f"{rid}: spec 写的 frames={r.get('frames')} 与 steps/K 推导的 {frames} 不符")
+    n = int(n_override) if n_override else int(r["n_build"])
+    if n <= 0 or n % 4 != 0:
+        bad.append(f"{rid}: n_build={n} 必须为正且是 4 的倍数(builder 硬限,四场景均分)")
+    fe = (r.get("feasibility") or {}).get("verdict")
+    if fe and fe != "feasible":
+        bad.append(f"{rid}: feasibility.verdict={fe} —— spec 自己标了不可行却还留在 rungs 里")
+
+if bad:
+    print("FATAL: ladder_spec.json 校验失败:")
+    for b in bad:
+        print("   -", b)
+    sys.exit(1)
+
+lines = []
+for r in rungs:
+    n = int(n_override) if n_override else int(r["n_build"])
+    lines.append("\t".join(str(x) for x in (
+        r["index"], r["id"], r["min_segments"], r["max_segments"],
+        r["angle_quantize"], r["min_overlap_ratio"], r["max_overlap_ratio"],
+        steps, n, r["label"])))
+out_p.write_text("\n".join(lines) + "\n", encoding="utf-8")
+print(f"[50] 校验通过:{len(rungs)} 档,帧数契约与 overlap 区间全部合法")
+print(f"[50] 计划 → {out_p}")
+for ln in lines:
+    print("     " + ln.replace("\t", "  "))
+PYPLAN
+[ -f "$PLAN" ] || { echo "FATAL: 计划生成失败" >&2; exit 1; }
+
+# =============================================================================
+# 逐档建库
+# =============================================================================
+# LADDER_ONLY 逗号和空格都收:qsub 的 -v 用逗号分隔变量,`-v LADDER_ONLY=A,B`
+# 会被 PBS 拆成两个变量,所以多档过滤实际只能用空格分隔的带引号写法。
+# 两种分隔符都支持,免得有人按直觉写逗号后静默只建了一档。
+_ONLY="$(printf '%s' "${LADDER_ONLY:-}" | tr ',' ' ')"
+_built=0; _skipped=0
+while IFS=$'\t' read -r IDX RID KMIN KMAX AQ OVLO OVHI STEPS NB LABEL; do
+    [ -n "${RID:-}" ] || continue
+    if [ -n "$_ONLY" ] && [[ " $_ONLY " != *" $RID "* ]]; then
+        echo "[50] 跳过 $RID(LADDER_ONLY 过滤)"; _skipped=$((_skipped+1)); continue
+    fi
+    RDIR="$LADDER_ROOT/$RID"
+    RH5="$RDIR/data/$RID.h5"
+    RTMP="$RDIR/tmp_bench"
+    mkdir -p "$RDIR/data"
+
+    # 内容绑定 stamp:参数指纹一变必然重建。布尔 stamp 做不到 —— 改了 spec 里的
+    # overlap 带却复用旧 H5,是这条链上最贵也最隐蔽的错误(曲线的 x 轴是假的)。
+    _SIG="$(printf '%s|%s|%s|%s|%s|%s|%s|%s' "$RID" "$KMIN" "$KMAX" "$AQ" "$OVLO" "$OVHI" "$STEPS" "$NB" | sha256sum | awk '{print $1}')"
+    if [ -f "$RH5" ] && sha_stamp_ok "$STAMPS/p50_${RID}.sig" "$_SIG"; then
+        echo "[50] $RID 已建且参数指纹一致,跳过"; _skipped=$((_skipped+1)); continue
+    fi
+
+    echo "==================================================================="
+    echo "[50] 建 $RID —— $LABEL"
+    echo "     K∈[$KMIN,$KMAX] angle_quantize=$AQ overlap=[$OVLO,$OVHI) steps=$STEPS n=$NB"
+    rm -rf "$RTMP"; rm -f "$RH5"
+    ( cd "$ROOT" && $PY lora_remotesense/build_dataset_from_benchmark.py \
+        -o "$RH5" -n "$NB" --dataset-tier "$DATASET_TIER" \
+        --min-segments "$KMIN" --max-segments "$KMAX" \
+        --angle-quantize "$AQ" \
+        --min-overlap-ratio "$OVLO" --max-overlap-ratio "$OVHI" \
+        --steps "$STEPS" \
+        ${LOCAL_AID_DIR:+--local-aid-dir "$LOCAL_AID_DIR"} \
+        --temp-dir "$RTMP" ) 2>&1 | tee "$LOGS/p50_${RID}_build.log"
+    [ -f "$RH5" ] || { echo "FATAL: $RID 建库失败(见 $LOGS/p50_${RID}_build.log)" >&2; exit 1; }
+
+    # overlap 审计是"这一档确实落在预注册带内"的唯一产物级证据,tmp 会被清掉,先抢救。
+    cp "$RTMP/overlap_audit.json" "$RDIR/overlap_audit.json" 2>/dev/null || {
+        echo "FATAL: $RID 缺 overlap_audit.json —— 无法证明该档的 overlap 带" >&2; exit 1; }
+    cp "$RTMP/semgate_attempts.json" "$RDIR/" 2>/dev/null || true
+
+    # -------------------------------------------------------------------
+    # 从【产物本身】自证参数生效。
+    # 这一步不是走过场:v2.8.1 的教训是 --min-segments 曾对 v5 分支完全无效且
+    # 不报错(builder 照样产出 K=2..4),而所有下游只看命令行参数,没人看 H5。
+    # 阶梯的 x 轴就是这几个参数,它们没生效 = 整条曲线是编的。
+    # -------------------------------------------------------------------
+    $PY - "$RH5" "$RDIR/overlap_audit.json" "$KMIN" "$KMAX" "$AQ" "$OVLO" "$OVHI" "$STEPS" "$NB" <<'PYVERIFY'
+import json, sys
+from pathlib import Path
+import h5py, numpy as np
+
+h5p, audp = sys.argv[1], sys.argv[2]
+kmin, kmax, aq = int(sys.argv[3]), int(sys.argv[4]), int(sys.argv[5])
+lo, hi, steps, nb = float(sys.argv[6]), float(sys.argv[7]), int(sys.argv[8]), int(sys.argv[9])
+fails = []
+
+with h5py.File(h5p, "r") as f:
+    m = dict(f["metadata"].attrs)
+    def gi(k):
+        return None if k not in m else int(m[k])
+    def gf(k):
+        return None if k not in m else float(m[k])
+    for key, want, get in (("min_segments", kmin, gi), ("max_segments", kmax, gi),
+                           ("angle_quantize", aq, gi), ("steps_per_segment", steps, gi)):
+        got = get(key)
+        if got != want:
+            fails.append(f"metadata.{key}={got} ≠ 请求的 {want}")
+    for key, want in (("min_overlap_ratio", lo), ("max_overlap_ratio", hi)):
+        got = gf(key)
+        if got is None or abs(got - want) > 1e-9:
+            fails.append(f"metadata.{key}={got} ≠ 请求的 {want}")
+
+    keys = sorted(f["data"].keys())
+    if len(keys) != nb:
+        fails.append(f"样本数 {len(keys)} ≠ 请求的 {nb}")
+    segs, ovs, Ts, angs = [], [], [], []
+    n_no_ov = 0
+    for k in keys:
+        s = f["data"][k]
+        Ts.append(int(s.attrs["num_frames"]))
+        if "num_segments" in s.attrs:
+            segs.append(int(s.attrs["num_segments"]))
+        if "overlap_ratio" in s.attrs:
+            ovs.append(float(s.attrs["overlap_ratio"]))
+        else:
+            n_no_ov += 1
+        if "segment_angles" in s:
+            angs.extend(np.asarray(s["segment_angles"][:]).ravel().tolist())
+
+# 逐样本段数:必须全部落在 [kmin,kmax],且端点都被覆盖(否则 K 轴的这一格名不副实)
+if not segs:
+    fails.append("没有任何样本带 num_segments —— 无法自证段数轴")
+else:
+    bad = sorted({x for x in segs if not (kmin <= x <= kmax)})
+    if bad:
+        fails.append(f"逐样本 num_segments 出现 {bad},超出 [{kmin},{kmax}]")
+    seen = sorted(set(segs))
+    if kmin != kmax and (kmin not in seen or kmax not in seen):
+        fails.append(f"K∈[{kmin},{kmax}] 但实际只出现 {seen} —— 混合档没覆盖到端点")
+
+# 逐样本 overlap:必须全部落在预注册带内(fail-closed:缺属性也算不过)
+if n_no_ov:
+    fails.append(f"{n_no_ov} 个样本没有 overlap_ratio 属性 —— 无法从产物自证该档的带")
+elif ovs:
+    if not all(lo <= x < hi for x in ovs):
+        fails.append(f"逐样本 overlap ∈ [{min(ovs):.4f}, {max(ovs):.4f}] 越出 [{lo}, {hi})")
+
+# 帧数契约
+want_T = sorted({steps + (k - 1) * (steps - 1) for k in range(kmin, kmax + 1)})
+got_T = sorted(set(Ts))
+if got_T != want_T:
+    fails.append(f"帧数 {got_T} ≠ 契约推导的 {want_T}")
+off = [t for t in got_T if (t - 1) % 4 != 0]
+if off:
+    fails.append(f"帧数 {off} 不满足 4n+1")
+
+# 角度量化:aq=4 必须只有 {0,90,180,270};aq=0 必须【不是】只有这四个值
+uniq = sorted({round(float(a) % 360.0, 3) for a in angs})
+CARD = {0.0, 90.0, 180.0, 270.0}
+if aq == 4:
+    extra = [a for a in uniq if a not in CARD]
+    if extra:
+        fails.append(f"angle_quantize=4 但出现非四方位角 {extra[:8]}")
+    if len(set(uniq) & CARD) < 4:
+        fails.append(f"angle_quantize=4 但只覆盖了四方位中的 "
+                     f"{sorted(set(uniq) & CARD)} —— 四方向没跑全,"
+                     f"该档的逐方向统计会被单一方向主导")
+elif aq == 0:
+    if uniq and set(uniq).issubset(CARD):
+        fails.append(f"angle_quantize=0 却只有四方位角 {uniq} —— 连续角没生效")
+
+# 审计文件与产物必须说同一件事(审计 JSON 可被替换,H5 才是产物本身,两边都要对)
+try:
+    au = json.loads(Path(audp).read_text(encoding="utf-8"))
+    if not au.get("enforce", False):
+        fails.append("overlap_audit.enforce=False —— 带没有被真正强制")
+    if abs(float(au.get("min_overlap_ratio", -1)) - lo) > 1e-9 or \
+       abs(float(au.get("max_overlap_ratio", -1)) - hi) > 1e-9:
+        fails.append(f"审计记的带 [{au.get('min_overlap_ratio')},{au.get('max_overlap_ratio')}) "
+                     f"≠ 请求的 [{lo},{hi})")
+except Exception as e:
+    fails.append(f"读不了 overlap_audit.json: {e}")
+
+st = {"n": len(ovs)}
+if ovs:
+    st.update(min=round(min(ovs), 4), p50=round(float(np.percentile(ovs, 50)), 4),
+              max=round(max(ovs), 4))
+print(f"  [verify] 段数分布={dict(zip(*np.unique(segs, return_counts=True)))} "
+      f"帧数={got_T} 角度集合={uniq if len(uniq) <= 8 else str(uniq[:8]) + '...'} overlap={st}")
+if fails:
+    print("FATAL: 建库参数未如实生效 —— 该档的 x 轴不可信:")
+    for i, x in enumerate(fails, 1):
+        print(f"   {i}. {x}")
+    sys.exit(1)
+print("  [verify] OK —— 段数/角度/overlap/帧数 四项均由产物自证")
+PYVERIFY
+    _rc=$?
+    [ "$_rc" -eq 0 ] || { echo "FATAL: $RID 产物自证失败(exit $_rc)" >&2; exit "$_rc"; }
+
+    # 重复/源身份门(与主线同门):同一档里不许有重复视频或复用源图。
+    # 非 AID 的泛化 tier 走 HF label 路线,源路径可为空(图片是内嵌 bytes)——
+    # 与 40_build_resisc45.pbs 同样的豁免。AID 永不豁免(主线口径)。
+    _DUPX=()
+    [ "$DATASET_TIER" = "aid" ] || _DUPX=(--allow-missing-paths)
+    _rc=0
+    $PY "$ROOT/server_run/check_benchmark_duplicates.py" \
+        --gt-h5 "$RH5" --expect-zero --expect-n "$NB" \
+        "${_DUPX[@]}" \
+        -o "$RDIR/duplicate_report.json" \
+        2>&1 | tee "$LOGS/p50_${RID}_dup.log" || _rc=$?
+    [ "$_rc" -eq 0 ] || { echo "FATAL: $RID DUPLICATE GATE FAIL (exit $_rc)" >&2; exit "$_rc"; }
+
+    if [ "${KEEP_TMP_BENCH:-0}" != "1" ]; then
+        rm -rf "$RTMP" 2>/dev/null || true
+    fi
+    sha_stamp "$STAMPS/p50_${RID}.sig" "$_SIG"
+    _built=$((_built+1))
+    echo "[50] $RID 完成 → $RH5"
+done < "$PLAN"
+
+echo "==================================================================="
+echo "[ok] 50 建库完成:新建 $_built 档,跳过 $_skipped 档 → $LADDER_ROOT"
+echo "     下一步:qsub -J 0-N server_run/pbs/51_ladder_train_eval.pbs(由 qsub_ladder.sh 编排)"

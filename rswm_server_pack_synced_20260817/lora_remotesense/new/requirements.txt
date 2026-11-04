@@ -1,0 +1,59 @@
+# =============================================================================
+# RSWM A800 80GB 已验证训练依赖
+#
+# 安装顺序：
+#   1) 单独装 PyTorch（不要走 pypi 默认源）
+#        pip install torch==2.4.0 torchvision==0.19.0 \
+#            --index-url https://download.pytorch.org/whl/cu121
+#   2) 装本文件全部依赖
+#        pip install -r requirements.txt
+#   3) 保持服务器已验证的 flash-attn 2.7.3 wheel（torch2.4/cu121 ABI）
+#
+# setup_env.sh 默认只核实、不升级；修改环境必须显式 RSWM_ALLOW_INSTALL=1。
+# =============================================================================
+
+# ---- LingBot 基模运行核心（diffusers+transformers 是 DiT / VAE / T5 必需） ----
+diffusers==0.39.0
+transformers==4.51.3
+tokenizers==0.21.4
+accelerate==1.14.0
+safetensors>=0.4.0
+huggingface-hub==0.36.2
+sentencepiece>=0.1.99            # T5 tokenizer 依赖
+protobuf>=3.20                   # T5 / HF tokenizer 序列化依赖
+peft==0.19.1                     # LoRA 注入（A800 服务器已验证）
+
+# ---- 张量 / 数值 ----
+numpy==1.26.4
+scipy>=1.10
+einops>=0.6.0
+
+# ---- 图像 / 视频 IO ----
+Pillow>=10.0
+opencv-python>=4.9.0.80
+imageio>=2.34
+imageio-ffmpeg>=0.5
+scikit-image>=0.22               # evaluate.py SSIM / 颜色空间转换
+
+# ---- 数据集 ----
+h5py>=3.8.0                      # LingBotDataset HDF5
+datasets>=2.18                   # HuggingFace 拉 AID/RS 数据（build_from_remotesense）
+
+# ---- 评估指标 ----
+lpips>=0.1.4                     # LPIPS
+torchmetrics>=1.2                # SSIM/PSNR 备用实现
+pytorch-fid>=0.3                 # FID
+scikit-learn>=1.3                # 部分 metric 用到 sklearn.metrics（保险）
+
+# ---- 训练辅助 / 进度 / 文本规整 ----
+tqdm>=4.66
+ftfy>=6.1                        # T5 tokenizer 文本清洗
+regex>=2024.4                    # wan.modules.tokenizers 用
+easydict>=1.10                   # wan.configs 用
+matplotlib>=3.7                  # 可视化 / direction 分析
+
+# ---- H200 常驻专家路径的可选优化；A800 offload 路径不用 ----
+bitsandbytes>=0.43.0
+
+# ---- 备注：flash-attn 单独装（见文件顶部） ----
+# flash-attn==2.7.3

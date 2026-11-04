@@ -1,0 +1,448 @@
+{
+  "spec_version": "ladder-1.0.0",
+  "created": "2026-07-29",
+  "title": "RSWM-Bench 难度阶梯 (difficulty ladder)",
+
+  "_why": [
+    "34a/34b 判门证明了 [K=1 / 四方向 / overlap 0.50-0.95] 可学;主矩阵 20-30 证明了",
+    "[K=2-4 / 连续角 / overlap 0.00-0.10] 不可学。两个端点之间是空的,而 benchmark 论文",
+    "该给的恰恰是一条难度曲线:哪一个旋钮、拧到哪一格,任务从可学掉到不可学。",
+    "本 spec 把这条曲线定义成一组【每步只动一个轴】的档位,使 Δ 可归因到单个旋钮。"
+  ],
+
+  "role": "ladder",
+  "_why_role": [
+    "ladder 既不是 headline,也不是 probe_gate/diagnostic_stationary 那类仪器诊断。",
+    "它跑的是真数据、真指标,论文会以独立的表/图报告它 —— 但它的数据分布【按设计】",
+    "偏离固定的 benchmark 配置(K/角度粒度/overlap 三者都被故意改过),所以它的数字",
+    "永远不能进主表:高重叠档的分数会让 benchmark 看起来比它实际定义的容易得多。",
+    "结论:role=ladder 必须与 probe_gate 同类,永不入 headline;但在汇总里应归",
+    "'diagnostic/supplementary' 档报告出来,而不是被当成来路不明的产物拒收。",
+    "⚠ 接线未完成前,_headline_eligible_for 会把 role=ladder 判成合格 headline ——",
+    "51 号作业开工前有 fail-closed 预检,未接线一律拒跑,详见 wiring_required。"
+  ],
+  "wiring_required": [
+    "lora_remotesense/new/run_manifest.py :: _NEVER_HEADLINE_ROLES 加 \"ladder\"",
+    "server_run/common.sh :: _RSWM_NEVER_HEADLINE_ROLES 加 ladder",
+    "server_run/collect_results.py :: DIAGNOSTIC_ROLES 加 \"ladder\"(让它进 diagnostic 档而非 rejected)",
+    "server_run/test_pose_timeline.py 有一条用例钉住这三处一致,改完要一起跑"
+  ],
+
+  "protocol": {
+    "_why": [
+      "曲线的每一格必须在【同一训练协议】下比较。不能用 34b(20 条训练集过拟合探针)",
+      "当起点、用主矩阵(N_MAIN=4000)当终点 —— 那两个点连数据量都差 200 倍,",
+      "中间的差异会被数据量吃掉。所以起点档(R0)与终点档(R10)都在本协议下【重跑一遍】,",
+      "34b 与 20-30 只作为外部锚点报告,不画在同一条曲线上。"
+    ],
+    "pose_mode": "native",
+    "_why_pose_mode": [
+      "benchmark 的核心 claim 是相机轨迹(Plücker)控制,34b(native)是起点的正对照。",
+      "drop 臂的整条阶梯被砍(见 cut_cells),复跑只需 LADDER_POSE_MODE=drop + 换 WORK 子目录。"
+    ],
+    "rswm_profile": "official",
+    "lora_rank": 16,
+    "lora_alpha": 16,
+    "lora_targets": "all",
+    "epochs": 5,
+    "learning_rate": "1e-4",
+    "gradient_accumulation_steps": 4,
+    "batch_size": 1,
+    "seed": 42,
+    "split_seed": 42,
+    "train_ratio": 0.8,
+    "n_build": 300,
+    "n_train": 240,
+    "n_eval": 60,
+    "_why_n_build": [
+      "300 = 4 的倍数(builder 硬限,四场景均分 75/场景),0.8/0.2 划分后 240 训 / 60 评。",
+      "n=300 时全阶梯约 90 GPU-h,在 11×10=110 GPU-h 的预算内且留了余量;",
+      "LADDER_N 可覆盖(成本近似线性)。60 条验证集里 well-posed 通常 ~70% → ~42 条,",
+      "角误差标准误约 std/√42;报告会逐档给 95% CI,别凭均值差直接下结论。"
+    ],
+    "dataset_tier": "aid",
+    "steps": 9,
+    "target_size": [480, 832],
+    "window_size": [128, 222],
+    "enforce_overlap": true,
+    "_why_enforce": [
+      "每一档的 overlap 带都是【预注册硬约束】,不是统计倾向。enforce 关掉的话",
+      "'第 k 档比第 k+1 档重叠高'这句话就没有产物级证据。逐档 overlap_audit.json 落盘。"
+    ],
+    "traj_max_tries": 32,
+    "_why_traj_max_tries": [
+      "默认 12。实测(见 rungs[].feasibility)连续角档的轨迹接受率只有 0.15-0.50,",
+      "12 次全拒的概率 1-13% —— 每发生一次就白白消耗一张源图。而拒一条轨迹只算",
+      "首末帧 bounds 的 overlap(不裁帧、不过语义门),极便宜。提高重采上限比烧源池划算。"
+    ]
+  },
+
+  "axes": {
+    "K": {
+      "name": "段数(折线段数,K-1 个转向)",
+      "levels": [1, 2, 4, "2-4"],
+      "_note": "K=3 被砍(见 cut_cells)。'2-4' = 每样本在 [2,4] 内随机 = 主矩阵口径。",
+      "frames_contract": "T = steps + (K-1)*(steps-1);steps=9 → K=1/2/3/4 → T=9/17/25/33,全部 ≡1 (mod 4)"
+    },
+    "angle_quantize": {
+      "name": "角度粒度",
+      "levels": [4, 0],
+      "4": "只走 E/N/W/S 四基本方向(判门口径)",
+      "0": "连续角(主矩阵 canonical 口径)",
+      "_measurement_note": [
+        "⚠ 这个轴同时移动了【任务难度】和【仪器地板】,两者必须分开读。",
+        "评估目标角一律来自 prompt 的四方位方向词(evaluate.py:parse_direction_angle_from_prompt),",
+        "而 prompt 的方向词是把净位移角量化到 E/N/W/S 得到的(build_dataset_from_benchmark.py:_make_prompt)。",
+        "→ angle_quantize=4 时真值角本来就是四方位,量化残差 = 0°;",
+        "→ angle_quantize=0 时真值角连续,残差近似均匀分布在 [0,45),期望 22.5°,",
+        "  这部分误差【任何模型都消不掉】。跨这个轴看到的 ~22.5° 抬升可能全是仪器,不是难度。",
+        "报告按档分别标地板,不画一条通用横线。"
+      ]
+    },
+    "overlap": {
+      "name": "首末帧视野重叠比(_calculate_overlap(start_bounds, end_bounds))",
+      "levels": ["ovH", "ovM2", "ovM1", "ovL"],
+      "_note": "是区间不是单侧上界:accept ⟺ min ≤ ov < max"
+    }
+  },
+
+  "overlap_bands": {
+    "ovH":  {"min": 0.50, "max": 0.95, "label": "[0.50,0.95)", "note": "判门探针带"},
+    "ovM2": {"min": 0.30, "max": 0.50, "label": "[0.30,0.50)"},
+    "ovM1": {"min": 0.10, "max": 0.30, "label": "[0.10,0.30)"},
+    "ovL":  {"min": 0.00, "max": 0.10, "label": "[0.00,0.10)", "note": "主 benchmark 硬约束带"}
+  },
+
+  "feasibility_study": {
+    "_what": [
+      "三轴不是自由组合的 —— 有些格子被建库器的几何直接判死。下表是纯几何模拟",
+      "(直接驱动 v5 的 RandomPositionPathGenerator + _calculate_overlap,3000 次/格,",
+      "window 128x222 / scene 512x512 / seed 42;overlap 只依赖 waypoints 与窗口尺寸,",
+      "与场景内容无关,所以合成源图的模拟结果对真实 AID 同样成立)。",
+      "accept = 一条随机轨迹落在带内的概率;p_src_exhausted = (1-accept)^traj_max_tries。"
+    ],
+    "traj_max_tries_used_in_sim": 12,
+    "cells": [
+      {"K": "1",   "aq": 4, "band": "ovH",  "accept": 1.000, "verdict": "feasible"},
+      {"K": "1",   "aq": 4, "band": "ovM2", "accept": 1.000, "verdict": "feasible"},
+      {"K": "1",   "aq": 4, "band": "ovM1", "accept": 1.000, "verdict": "feasible"},
+      {"K": "1",   "aq": 4, "band": "ovL",  "accept": 1.000, "verdict": "feasible"},
+      {"K": "2",   "aq": 4, "band": "ovH",  "accept": 0.618, "verdict": "feasible"},
+      {"K": "4",   "aq": 4, "band": "ovH",  "accept": 0.924, "verdict": "feasible"},
+      {"K": "2",   "aq": 4, "band": "ovM2", "accept": 0.000, "verdict": "INFEASIBLE"},
+      {"K": "4",   "aq": 4, "band": "ovM2", "accept": 0.000, "verdict": "INFEASIBLE"},
+      {"K": "1",   "aq": 0, "band": "ovH",  "accept": 0.085, "verdict": "INFEASIBLE_PRACTICAL"},
+      {"K": "1",   "aq": 0, "band": "ovM2", "accept": 0.285, "verdict": "feasible"},
+      {"K": "1",   "aq": 0, "band": "ovL",  "accept": 0.302, "verdict": "feasible"},
+      {"K": "2",   "aq": 0, "band": "ovL",  "accept": 0.387, "verdict": "feasible"},
+      {"K": "4",   "aq": 0, "band": "ovL",  "accept": 0.498, "verdict": "feasible"},
+      {"K": "2-4", "aq": 0, "band": "ovL",  "accept": 0.446, "verdict": "feasible"}
+    ],
+    "explanations": {
+      "aq4_K>=2_mid_bands_impossible": [
+        "aq=4 时逐段位移是从 overlap 带【反解】出来的(v5:495-541),约束的是每一段;",
+        "但验收测的是首末帧的【净】overlap。两段正交时净 overlap ≈ 两个逐轴因子之积,",
+        "若每个因子都被反解到 [lo,hi),乘积落在 [lo²,hi²) —— 对 [0.30,0.50) 就是 [0.09,0.25),",
+        "整体落在带下方,恒被拒。模拟实测 accept=0.000,不是'慢',是'不可能'。",
+        "(ovH 例外:[0.50,0.95)² = [0.25,0.90] 与带本身重叠一大块,故 K=2/4 仍可行。)"
+      ],
+      "aq0_ovH_impossible": [
+        "连续角下 overlap ≈ (1-|dx|/222)(1-|dy|/128),而 min_segment_length=0.15 强制",
+        "位移 ≥ 0.15*512 = 76.8 px。纯 N/S 方向 1-76.8/128 = 0.40 < 0.50,永远进不了带;",
+        "只有近水平方向能满足 → 就算硬建出来也是 E/W 偏斜的数据集,不再是'只动角度轴'",
+        "的单变量移动。模拟 accept=0.085 → 12 次全拒概率 0.34/源图,建库会疯狂消耗源池。",
+        "v5 给 aq=4 加带反解正是为了绕开这一条(见 v5:495-511 的注释)。"
+      ]
+    }
+  },
+
+  "cost_model": {
+    "_why": [
+      "任务给的估法是【每个训练配置 ~10 GPU-hour】。那是按 33 帧算的上界:阶梯里一半以上",
+      "的档是 K=1(T=9 帧),成本只有 33 帧档的约 27%。两个数都报,别用一个平均数糊过去。"
+    ],
+    "fps_infer": 0.11,
+    "_fps_provenance": "common.sh 的实测口径注释:推理 ~0.11 FPS × 33 帧 ≈ 5 min/条",
+    "step_to_gen_ratio": 0.067,
+    "_step_to_gen_provenance": [
+      "一次训练 step ≈ 1 前向 + 1 反向 ≈ 3 个前向;一次生成 ≈ 45 个去噪步 ≈ 45 个前向。",
+      "3/45 ≈ 0.067。这是【推导的量级估计,不是实测】—— 真跑完第一档就该用实际墙钟回填。"
+    ],
+    "formula": "cost_h = (n_train*epochs*(T/fps)*step_to_gen + 2*n_eval*(T/fps)) / 3600",
+    "_formula_note": "2* 是因为每档要评两条臂:LoRA 与同档 baseline(Δ 的分母)",
+    "per_T_hours": {
+      "9":  {"train": 1.83, "eval_x2": 2.73, "total": 4.55},
+      "17": {"train": 3.45, "eval_x2": 5.15, "total": 8.60},
+      "25": {"train": 5.08, "eval_x2": 7.58, "total": 12.65},
+      "33": {"train": 6.70, "eval_x2": 10.00, "total": 16.70}
+    },
+    "totals": {
+      "n_training_jobs": 11,
+      "flat_rate_ceiling_gpu_hours": 110,
+      "_flat_rate_note": "11 配置 × 任务给定的 ~10 GPU-h/配置",
+      "frame_weighted_estimate_gpu_hours": 90.5,
+      "build_job_cpu_hours_estimate": "3300 样本纯 CPU/IO,按 01 号(4000 样本 6h 墙钟)线性外推 ≈ 5h;语义门在 CPU 上再加 2-3h,故 walltime 开 20h"
+    }
+  },
+
+  "instrument_floors": {
+    "_why": [
+      "读者必须能一眼看出'哪些档的差异是可分辨的'。三条参考线,含义完全不同:"
+    ],
+    "random_expectation_deg": 90.0,
+    "_random_note": "折叠到 [0,180] 的均匀随机方向,期望 90°。曲线贴着它 = 完全没学到方向。",
+    "quantization_floor_deg": {
+      "angle_quantize_4": 0.0,
+      "angle_quantize_0": 22.5,
+      "_note": [
+        "目标角 = prompt 四方位词 +180°。aq=4 的数据真值角本身就是四方位 → 残差 0°;",
+        "aq=0 的真值角连续 → |真值 - 四方位| 近似 U[0,45),期望 22.5°,任何模型都消不掉。",
+        "所以 22.5° 这条线【只对 aq=0 的档成立】,对 aq=4 的档画上去是错的。",
+        "ladder_report.py 支持从各档 H5 的 waypoints 直接算该档的真实量化残差,不用这两个解析值。"
+      ]
+    },
+    "flow_estimator_floor_deg": {
+      "default": 25.0,
+      "_provenance": [
+        "validate_direction_metric.py v2.3 注释记录的 GT 实测:step=1 口径下 GT 地板",
+        "mean 35.93° / median 24.45°(median 恰好≈22.5° 的量化地板)。任务口径的 '~25°'",
+        "对应的是 median。⚠ 这个数是在 canonical(=aq=0)数据上测的,它其实是",
+        "'量化残差 + 光流噪声' 的合计,不是纯估计器噪声(纯估计器在合成平移上是 0.020°)。",
+        "→ 直接把 25° 套到 aq=4 的档上会高估地板。正确做法是逐档实测:",
+        "  51 号作业跑完 eval 后会对每档 GT 跑一次 validate_direction_metric.py,",
+        "  ladder_report.py 优先用该档 direction_validation.json 的实测值,默认值只是兜底。"
+      ]
+    },
+    "resolvable_rule": [
+      "两档的差异算'可分辨'需要同时满足:(a) 两档 95% CI 不重叠;",
+      "(b) 至少有一档明显高于它自己那一档的地板(否则两个都趴在仪器噪声里,差异无意义)。"
+    ]
+  },
+
+  "chains": {
+    "_id_note": "rungs 里写的必须是 rungs[].id 的【全名】—— 报告按 id 查表,写简称会静默查不到、整张表 3 全空。",
+    "V": {"name": "overlap 轴(K=1 / aq=4 固定)",
+          "rungs": ["R0_k1_q4_ovH", "R1_k1_q4_ovM2", "R2_k1_q4_ovM1", "R3_k1_q4_ovL"]},
+    "K_easy": {"name": "K 轴(aq=4 / ovH 固定)",
+               "rungs": ["R0_k1_q4_ovH", "R4_k2_q4_ovH", "R5_k4_q4_ovH"]},
+    "K_hard": {"name": "K 轴(aq=0 / ovL 固定)",
+               "rungs": ["R7_k1_q0_ovL", "R8_k2_q0_ovL", "R9_k4_q0_ovL", "R10_k24_q0_ovL"]},
+    "A_easy": {"name": "角度轴(K=1 / ovM2 固定)",
+               "rungs": ["R1_k1_q4_ovM2", "R6_k1_q0_ovM2"]},
+    "A_hard": {"name": "角度轴(K=1 / ovL 固定)",
+               "rungs": ["R3_k1_q4_ovL", "R7_k1_q0_ovL"]},
+    "_note": [
+      "A_easy 与 A_hard 是同一个轴在两个 overlap 水平上的边际 —— 两者不等就说明",
+      "角度轴与 overlap 轴有交互,曲线不能当成三个独立可加的项来读。",
+      "K_easy 与 K_hard 对 K 轴同理。"
+    ]
+  },
+
+  "rungs": [
+    {
+      "index": 0, "id": "R0_k1_q4_ovH",
+      "label": "K=1 · 四方向 · ov[0.50,0.95)",
+      "min_segments": 1, "max_segments": 1, "angle_quantize": 4,
+      "min_overlap_ratio": 0.50, "max_overlap_ratio": 0.95,
+      "frames": [9], "n_build": 300,
+      "chains": ["V", "K_easy"], "prev_on_chain": null,
+      "est_gpu_hours": 4.55,
+      "feasibility": {"accept_rate_sim": 1.000, "verdict": "feasible"},
+      "external_anchor": "34b_learnability_native(同配置,但 n=20 且是训练集过拟合探针,不可直接比)",
+      "notes": "阶梯起点 = 判门配置。已知可学(34b PASS 时)。"
+    },
+    {
+      "index": 1, "id": "R1_k1_q4_ovM2",
+      "label": "K=1 · 四方向 · ov[0.30,0.50)",
+      "min_segments": 1, "max_segments": 1, "angle_quantize": 4,
+      "min_overlap_ratio": 0.30, "max_overlap_ratio": 0.50,
+      "frames": [9], "n_build": 300,
+      "chains": ["V", "A_easy"], "prev_on_chain": "R0_k1_q4_ovH",
+      "moved_axis": "overlap", "est_gpu_hours": 4.55,
+      "feasibility": {"accept_rate_sim": 1.000, "verdict": "feasible"},
+      "notes": "只动 overlap 轴一格。"
+    },
+    {
+      "index": 2, "id": "R2_k1_q4_ovM1",
+      "label": "K=1 · 四方向 · ov[0.10,0.30)",
+      "min_segments": 1, "max_segments": 1, "angle_quantize": 4,
+      "min_overlap_ratio": 0.10, "max_overlap_ratio": 0.30,
+      "frames": [9], "n_build": 300,
+      "chains": ["V"], "prev_on_chain": "R1_k1_q4_ovM2",
+      "moved_axis": "overlap", "est_gpu_hours": 4.55,
+      "feasibility": {"accept_rate_sim": 1.000, "verdict": "feasible"},
+      "notes": "只动 overlap 轴一格。"
+    },
+    {
+      "index": 3, "id": "R3_k1_q4_ovL",
+      "label": "K=1 · 四方向 · ov[0.00,0.10)",
+      "min_segments": 1, "max_segments": 1, "angle_quantize": 4,
+      "min_overlap_ratio": 0.00, "max_overlap_ratio": 0.10,
+      "frames": [9], "n_build": 300,
+      "chains": ["V", "A_hard"], "prev_on_chain": "R2_k1_q4_ovM1",
+      "moved_axis": "overlap", "est_gpu_hours": 4.55,
+      "feasibility": {"accept_rate_sim": 1.000, "verdict": "feasible"},
+      "notes": "overlap 已降到主 benchmark 的硬约束带,但 K 与角度粒度还停在判门口径。"
+    },
+    {
+      "index": 4, "id": "R4_k2_q4_ovH",
+      "label": "K=2 · 四方向 · ov[0.50,0.95)",
+      "min_segments": 2, "max_segments": 2, "angle_quantize": 4,
+      "min_overlap_ratio": 0.50, "max_overlap_ratio": 0.95,
+      "frames": [17], "n_build": 300,
+      "chains": ["K_easy"], "prev_on_chain": "R0_k1_q4_ovH",
+      "moved_axis": "K", "est_gpu_hours": 8.60,
+      "feasibility": {"accept_rate_sim": 0.618, "verdict": "feasible"},
+      "notes": "从已证可学的点上只加一个转向。曲线在这里就掉 = 'K 是主因'。"
+    },
+    {
+      "index": 5, "id": "R5_k4_q4_ovH",
+      "label": "K=4 · 四方向 · ov[0.50,0.95)",
+      "min_segments": 4, "max_segments": 4, "angle_quantize": 4,
+      "min_overlap_ratio": 0.50, "max_overlap_ratio": 0.95,
+      "frames": [33], "n_build": 300,
+      "chains": ["K_easy"], "prev_on_chain": "R4_k2_q4_ovH",
+      "moved_axis": "K", "est_gpu_hours": 16.70,
+      "feasibility": {"accept_rate_sim": 0.924, "verdict": "feasible"},
+      "notes": "K 轴在 easy overlap 上的终点(3 个转向)。"
+    },
+    {
+      "index": 6, "id": "R6_k1_q0_ovM2",
+      "label": "K=1 · 连续角 · ov[0.30,0.50)",
+      "min_segments": 1, "max_segments": 1, "angle_quantize": 0,
+      "min_overlap_ratio": 0.30, "max_overlap_ratio": 0.50,
+      "frames": [9], "n_build": 300,
+      "chains": ["A_easy"], "prev_on_chain": "R1_k1_q4_ovM2",
+      "moved_axis": "angle_quantize", "est_gpu_hours": 4.55,
+      "feasibility": {"accept_rate_sim": 0.285, "verdict": "feasible"},
+      "notes": [
+        "角度轴的边际【在容易的 overlap 上】测一次。跨这一步的抬升要先扣掉 22.5° 的",
+        "量化地板(R1 的地板是 0°,R6 的是 22.5°),扣完还剩多少才是真难度。"
+      ]
+    },
+    {
+      "index": 7, "id": "R7_k1_q0_ovL",
+      "label": "K=1 · 连续角 · ov[0.00,0.10)",
+      "min_segments": 1, "max_segments": 1, "angle_quantize": 0,
+      "min_overlap_ratio": 0.00, "max_overlap_ratio": 0.10,
+      "frames": [9], "n_build": 300,
+      "chains": ["A_hard", "K_hard"], "prev_on_chain": "R3_k1_q4_ovL",
+      "moved_axis": "angle_quantize", "est_gpu_hours": 4.55,
+      "feasibility": {"accept_rate_sim": 0.302, "verdict": "feasible"},
+      "notes": "= 主矩阵配置但只留单段直线。角度轴的边际【在困难的 overlap 上】再测一次。"
+    },
+    {
+      "index": 8, "id": "R8_k2_q0_ovL",
+      "label": "K=2 · 连续角 · ov[0.00,0.10)",
+      "min_segments": 2, "max_segments": 2, "angle_quantize": 0,
+      "min_overlap_ratio": 0.00, "max_overlap_ratio": 0.10,
+      "frames": [17], "n_build": 300,
+      "chains": ["K_hard"], "prev_on_chain": "R7_k1_q0_ovL",
+      "moved_axis": "K", "est_gpu_hours": 8.60,
+      "feasibility": {"accept_rate_sim": 0.387, "verdict": "feasible"},
+      "notes": "主矩阵口径下的 K 轴第一格。"
+    },
+    {
+      "index": 9, "id": "R9_k4_q0_ovL",
+      "label": "K=4 · 连续角 · ov[0.00,0.10)",
+      "min_segments": 4, "max_segments": 4, "angle_quantize": 0,
+      "min_overlap_ratio": 0.00, "max_overlap_ratio": 0.10,
+      "frames": [33], "n_build": 300,
+      "chains": ["K_hard"], "prev_on_chain": "R8_k2_q0_ovL",
+      "moved_axis": "K", "est_gpu_hours": 16.70,
+      "feasibility": {"accept_rate_sim": 0.498, "verdict": "feasible"},
+      "notes": "主矩阵口径下 K 轴最难的单一 K。"
+    },
+    {
+      "index": 10, "id": "R10_k24_q0_ovL",
+      "label": "K∈[2,4] · 连续角 · ov[0.00,0.10)  = 主矩阵配置",
+      "min_segments": 2, "max_segments": 4, "angle_quantize": 0,
+      "min_overlap_ratio": 0.00, "max_overlap_ratio": 0.10,
+      "frames": [17, 25, 33], "n_build": 300,
+      "chains": ["K_hard"], "prev_on_chain": "R9_k4_q0_ovL",
+      "moved_axis": "K", "est_gpu_hours": 12.65,
+      "feasibility": {"accept_rate_sim": 0.446, "verdict": "feasible"},
+      "external_anchor": "23_r16_geo_s42(同配置,但 N_MAIN=4000,不可直接比)",
+      "notes": [
+        "阶梯终点 = 主矩阵配置,在阶梯协议(n=300)下重跑一遍。",
+        "它与 23 号的差 = 数据量效应,正好给主矩阵的 null 结论补一个'不是样本量问题'的旁证。"
+      ]
+    }
+  ],
+
+  "cut_cells": [
+    {
+      "what": "三轴全交叉 K{1,2,3,4,[2,4]} × aq{4,0} × ov{ovH,ovM2,ovM1,ovL} = 40 格",
+      "why": "按 10 GPU-h/配置 = 400 GPU-h,且其中一大半格子按 feasibility_study 根本建不出来。"
+    },
+    {
+      "what": "aq=0 × ov[0.50,0.95) 的全部格子",
+      "why": "几何上不可行(accept=0.085,12 次全拒 0.34/源图);硬建出来也是 E/W 偏斜的数据集,不是单变量移动。",
+      "evidence": "feasibility_study.explanations.aq0_ovH_impossible",
+      "consequence": "角度轴无法在最容易的 overlap 带上跨越 —— 所以 A_easy 定在 ovM2 而不是 ovH。"
+    },
+    {
+      "what": "aq=4 × K≥2 × ov[0.30,0.50) / [0.10,0.30) 的全部格子",
+      "why": "accept=0.000,数学上不可能(逐段带反解 vs 净 overlap 验收的冲突)。",
+      "evidence": "feasibility_study.explanations.aq4_K>=2_mid_bands_impossible",
+      "consequence": "K 轴的 easy 分支只能停在 ovH;K 轴与 overlap 轴无法在中间带交叉。"
+    },
+    {
+      "what": "K=3 的全部格子",
+      "why": "K 轴要证的是单调性而不是分辨率,K∈{1,2,4} 已经能定形状;K=3 可插值。省 8.6 GPU-h(以及 [2,4] 混合档里本来就含 K=3)。"
+    },
+    {
+      "what": "aq=4 × K=2/4 × ovL(即在主 overlap 带上把角度换回四方向)",
+      "why": [
+        "本来是'从终点松开角度轴'的反向边际,信息与 A_hard(R3↔R7)重复:",
+        "R3/R7 已经在 ovL 上给了角度轴的边际,只是 K=1。再加 K≥2 的版本要 2 个作业、25 GPU-h,",
+        "换来的只是'角度边际是否随 K 变化'。优先级低于 K 轴本身的形状。",
+        "要加的话:min/max_segments=2 与 4、aq=4、ov[0.00,0.10),两个格子都可行。"
+      ]
+    },
+    {
+      "what": "drop(真 text-only)臂的整条阶梯",
+      "why": [
+        "×2 = 22 个训练作业、180+ GPU-h,超预算一倍。benchmark 的核心 claim 是相机轨迹",
+        "(Plücker)控制,起点的正对照 34b 也是 native,所以 native 优先。",
+        "复跑代价很小:LADDER_POSE_MODE=drop + 换 LADDER_ROOT 子目录,spec 不用改。"
+      ]
+    },
+    {
+      "what": "每档多种子(3 seeds)",
+      "why": [
+        "×3 = 33 个作业。阶梯要的结论是【档与档之间的次序】,不是单档的绝对值;",
+        "训练种子方差已经由主矩阵的 20/21/22 与 23/24/25 三元组量化过了。",
+        "单档的不确定性改用逐样本 bootstrap CI 报告(scores.json 里有逐样本角误差)。"
+      ]
+    },
+    {
+      "what": "把起点/终点直接别名到 34b / 23 号,省下 2 个训练作业",
+      "why": [
+        "34b 是 n=20 的训练集过拟合探针,23 号是 N_MAIN=4000 的泛化实验 —— 两端连数据量",
+        "都差 200 倍,把它们当同一条曲线的两端,中间任何差异都可以被数据量解释掉。",
+        "宁可多烧 17 GPU-h 把两端在同一协议下重跑,也不要一条自己就不自洽的曲线。",
+        "34b / 23 仍作为外部锚点在报告里单列(见 rungs[].external_anchor)。"
+      ]
+    }
+  ],
+
+  "artifacts": {
+    "ladder_root_env": "LADDER_ROOT",
+    "ladder_root_default": "$WORK/ladder",
+    "per_rung_layout": {
+      "data_h5": "$LADDER_ROOT/<id>/data/<id>.h5",
+      "overlap_audit": "$LADDER_ROOT/<id>/overlap_audit.json",
+      "duplicate_report": "$LADDER_ROOT/<id>/duplicate_report.json",
+      "train_dir": "$LADDER_ROOT/<id>/train",
+      "split_file": "$LADDER_ROOT/<id>/train/train_val_split.json",
+      "eval_lora": "$LADDER_ROOT/<id>/eval_lora",
+      "eval_base": "$LADDER_ROOT/<id>/eval_base",
+      "gt_floor": "$LADDER_ROOT/<id>/direction_validation.json"
+    },
+    "report": {
+      "markdown": "$LADDER_ROOT/ladder_report.md",
+      "json": "$LADDER_ROOT/ladder_report.json"
+    }
+  }
+}

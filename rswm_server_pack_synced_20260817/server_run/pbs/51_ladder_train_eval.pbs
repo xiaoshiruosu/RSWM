@@ -1,0 +1,242 @@
+#!/bin/bash
+#PBS -P rx40
+#PBS -q gpuhopper
+#PBS -N rswm_51_ladder
+#PBS -l ncpus=12,ngpus=1,mem=128GB,jobfs=100GB,walltime=24:00:00
+#PBS -l storage=scratch/qk73+scratch/rx40
+#PBS -l wd
+#PBS -j oe
+#PBS -J 0-10
+# =============================================================================
+# 51_ladder_train_eval.pbs — 难度阶梯:PBS array,每个 $PBS_ARRAY_INDEX 训评一档
+#
+# ⚠ 上面的 `-J 0-10` 是【按 ladder_spec.json 当前 11 档写死的默认值】。
+#   qsub_ladder.sh 会用 spec 实际档数生成 -J 覆盖它,并在覆盖前核对这一行 ——
+#   spec 加减档而这里没跟着改时,直接 qsub 会静默漏跑或越界,所以两边都要检。
+#   本作业运行期也会自查 index 是否越界。
+#
+# 每个 array 元素做三件事(全部落在该档自己的目录里,档与档互不干扰):
+#   1) train_lora  —— 该档 H5 上训 LoRA(r16/α16,与主线同配方)
+#   2) eval_lora   —— 在该档 val 集上评 LoRA 臂
+#   3) eval_base   —— 同数据同 split 评基模臂 = 该档的 Δ 分母
+#   4) 该档 GT 上跑一次方向指标校验 → 得到【该档实测的仪器地板】
+#
+# 为什么每档都要自己的 baseline:base model 的角误差本身就随难度变化(高重叠、
+# 四方向的任务对基模也更容易)。拿一个全局 baseline 去减,难度曲线会被基模的
+# 难度曲线污染,Δ 完全不可解读。
+#
+# 为什么第 4 步不能省:量化地板【逐档不同】—— angle_quantize=4 的档真值角就是四方位,
+# 量化残差 0°;angle_quantize=0 的档残差期望 22.5°。把 25° 画成一条通用横线,
+# 会让"角度轴带来 20+° 难度"这种纯仪器假象被当成结论。逐档实测才说得清。
+#
+# 前置: 50_ladder_build.pbs 全绿(需要各档 H5 + overlap_audit.json)
+#
+# walltime 24h 对最贵的两档(K=4,T=33,成本模型估 ~16.7 GPU-h)留了余量,但那个
+# 估计里的 step_to_gen 比例是推导值不是实测值。真跑超时不必慌:train_lora 有
+# 自动 --resume_from(见 common.sh),三步各自有 stamp,原样重投这一个 array 元素
+# 即可从断点续。第一档跑完后请用实际墙钟回填 ladder_spec.json 的 cost_model。
+#
+# 用法(包根,推荐用 qsub_ladder.sh):
+#   qsub -J 0-10 -v LADDER_ROOT=/scratch/rx40/$USER/rswm_ladder \
+#        server_run/pbs/51_ladder_train_eval.pbs
+# 可选 -v: LADDER_POSE_MODE=native|drop(默认 native) LADDER_EVAL_N=0(0=全量 val)
+#          LADDER_SPEC=<别的 spec>  SKIP_GT_FLOOR=1(跳过第 4 步)
+# =============================================================================
+_ENVF="${PBS_O_WORKDIR:-$PWD}/server_run/pbs/_pbs_env.sh"
+[ -f "$_ENVF" ] || { echo "FATAL: 找不到 $_ENVF —— 必须从包根 qsub(缺 -l wd 或提交目录不对)"; exit 1; }
+source "$_ENVF"
+# 产物角色 —— 进 run_manifest,并参与 headline 资格判定。理由见 ladder_spec.json 的 _why_role。
+export RSWM_RUN_ROLE=ladder
+# 阶梯是几何通路(Plücker)的难度曲线;起点的正对照 34b 也是 native。
+export POSE_MODE="${LADDER_POSE_MODE:-native}"
+
+# ---- profile 断言(不覆写;理由同 50 号)----
+if [ "${RSWM_PROFILE:-}" != "official" ]; then
+    echo "FATAL: 阶梯必须在 official profile 下跑,当前 RSWM_PROFILE=${RSWM_PROFILE:-<空>}。" >&2
+    exit 1
+fi
+
+# =============================================================================
+# [fail-closed 预检] role=ladder 必须已被登记为"永不入 headline"
+#
+# 这是整个交付里最容易漏、后果最贵的一环:role=ladder 目前【不在】
+# run_manifest._NEVER_HEADLINE_ROLES / common.sh 的 _RSWM_NEVER_HEADLINE_ROLES 名单里,
+# 于是 official + native 会把阶梯产物判成合格 headline。后果不是报错而是静默污染:
+# 高重叠档(R0/R4/R5)的分数一旦被 collect_results 收进主表,benchmark 看起来比它
+# 实际定义的容易得多,而主表里没有任何字段能提示"这几行来自另一个数据分布"。
+#
+# 所以在【烧任何 GPU 之前】按行为(而不是按名单字面量)验一次:用本次运行的真实
+# 环境值调 headline_eligible(...),它返回 True 就说明接线没做完,当场拒跑。
+# =============================================================================
+$PY - "$ROOT" <<'PYGUARD'
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(sys.argv[1]) / "lora_remotesense" / "new"))
+import os
+from run_manifest import headline_eligible
+
+prof = os.environ.get("RSWM_PROFILE", "unset")
+sem = os.environ.get("SEM_ARM_MODE", "unset")
+pm = os.environ.get("POSE_MODE", "native")
+ok, why = headline_eligible(
+    prof, sem, pm, "ladder",
+    prompt_schema=os.environ.get("RSWM_PROMPT_SCHEMA"),
+    path_estimator=os.environ.get("RSWM_PATH_ESTIMATOR"))
+print(f"[guard] headline_eligible(profile={prof}, sem_arm={sem}, "
+      f"pose_mode={pm}, role=ladder) = {ok}  reason={why}")
+if ok:
+    print("FATAL: role=ladder 目前会被判成【合格 headline】—— 接线未完成,拒绝跑。")
+    print("       阶梯各档的数据分布按设计偏离固定 benchmark 配置(K/角度粒度/overlap")
+    print("       三个旋钮都被故意改过),它的数字进主表会让 benchmark 看起来比实际容易,")
+    print("       而主表里没有任何字段提示这几行来自另一个分布。")
+    print("       请先在这三处把 \"ladder\" 登记为永不入 headline,再重投本作业:")
+    print("         1. lora_remotesense/new/run_manifest.py :: _NEVER_HEADLINE_ROLES")
+    print("         2. server_run/common.sh :: _RSWM_NEVER_HEADLINE_ROLES")
+    print("         3. server_run/collect_results.py :: DIAGNOSTIC_ROLES")
+    print("            (第 3 处决定它是被当成 diagnostic 报告出来,还是被当成")
+    print("             来路不明的产物整个拒收 —— 阶梯要的是前者。)")
+    print("       server_run/test_pose_timeline.py 有用例钉住这几处一致,改完一起跑。")
+    sys.exit(2)
+print("[guard] OK —— role=ladder 已登记为永不入 headline")
+PYGUARD
+_rc=$?
+[ "$_rc" -eq 0 ] || exit "$_rc"
+
+# bash 侧同一断言:common.sh 的 _headline_eligible_for 是训练/评估实际用的那条路径,
+# 与 python 侧是两份独立实现(注释明写"改一处必须改两处"),两边都要过。
+if [ "$(_headline_eligible_for "$POSE_MODE" ladder)" != "0" ]; then
+    echo "FATAL: common.sh 的 _headline_eligible_for($POSE_MODE, ladder) 返回合格 —— " >&2
+    echo "       _RSWM_NEVER_HEADLINE_ROLES 里还没有 ladder。见上面的接线清单。" >&2
+    exit 2
+fi
+
+SPEC="${LADDER_SPEC:-$ROOT/server_run/ladder_spec.json}"
+[ -f "$SPEC" ] || { echo "FATAL: 缺 spec $SPEC" >&2; exit 1; }
+LADDER_ROOT="${LADDER_ROOT:-$WORK/ladder}"
+[ -d "$LADDER_ROOT" ] || { echo "FATAL: $LADDER_ROOT 不存在 —— 先跑 50_ladder_build.pbs" >&2; exit 1; }
+
+# =============================================================================
+# 取第 i 档。
+# PBS_ARRAY_INDEX 只在 array 作业里有;直接 qsub(非 array)排障时允许用
+# LADDER_INDEX 顶上。两个都没有就死 —— 绝不默认成 0,那会让"忘了加 -J"变成
+# "只跑了第 0 档还看着像成功"。
+# =============================================================================
+IDX="${PBS_ARRAY_INDEX:-${LADDER_INDEX:-}}"
+if [ -z "$IDX" ]; then
+    echo "FATAL: 既没有 \$PBS_ARRAY_INDEX 也没有 LADDER_INDEX。" >&2
+    echo "       array 提交: qsub -J 0-N ...   单档排障: qsub -v LADDER_INDEX=3 ..." >&2
+    exit 1
+fi
+case "$IDX" in ''|*[!0-9]*) echo "FATAL: 索引 '$IDX' 不是非负整数" >&2; exit 1 ;; esac
+
+# spec → 该档字段(与 50 号的 plan.tsv 同字段同顺序)
+_RUNG="$($PY - "$SPEC" "$IDX" <<'PYRUNG'
+import json, shlex, sys
+from pathlib import Path
+spec = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+i = int(sys.argv[2])
+rungs = spec["rungs"]
+if not (0 <= i < len(rungs)):
+    sys.stderr.write(
+        f"FATAL: 索引 {i} 越界 —— spec 只有 {len(rungs)} 档(合法范围 0..{len(rungs)-1})。\n"
+        f"       多半是 -J 的上界与 spec 档数不一致;用 qsub_ladder.sh 提交可自动对齐。\n")
+    sys.exit(1)
+r = rungs[i]
+if int(r["index"]) != i:
+    sys.stderr.write(f"FATAL: rungs[{i}].index={r['index']} 与位置不符,spec 已错位。\n")
+    sys.exit(1)
+steps = int(spec["protocol"]["steps"])
+kmin, kmax = int(r["min_segments"]), int(r["max_segments"])
+frames = sorted({steps + (k - 1) * (steps - 1) for k in range(kmin, kmax + 1)})
+off = [t for t in frames if (t - 1) % 4 != 0]
+if off:
+    sys.stderr.write(f"FATAL: {r['id']} 帧数 {off} 不满足 4n+1。\n")
+    sys.exit(1)
+# 全部值都过 shlex.quote:label 里有空格、`·`、`[`、`)`、`=`,不引号的话
+# 调用方的 eval 会当场语法错(实测:`RLABEL=K∈[2,4] · … ov[0.00,0.10)` → syntax error)。
+p = spec["protocol"]
+for k, v in (("RID", r["id"]), ("RLABEL", r["label"]),
+             ("RANK", int(p["lora_rank"])), ("ALPHA", int(p["lora_alpha"])),
+             ("RSEED", int(p["seed"])), ("RSPLITSEED", int(p["split_seed"])),
+             ("REPOCHS", int(p["epochs"])), ("RTARGETS", p["lora_targets"]),
+             ("RMAXFRAMES", max(frames)), ("RNRUNGS", len(rungs))):
+    print(f"{k}={shlex.quote(str(v))}")
+PYRUNG
+)" || { echo "FATAL: 取第 $IDX 档失败(见上)" >&2; exit 1; }
+eval "$_RUNG"
+
+RDIR="$LADDER_ROOT/$RID"
+RH5="$RDIR/data/$RID.h5"
+OUT="$RDIR/train"
+[ -f "$RH5" ] || { echo "FATAL: 缺 $RH5 —— 先跑 50_ladder_build.pbs" >&2; exit 1; }
+[ -f "$RDIR/overlap_audit.json" ] || { echo "FATAL: 缺 $RDIR/overlap_audit.json" >&2; exit 1; }
+
+# =============================================================================
+# MAX_FRAMES 必须跟着这一档的实际帧数走。
+# common.sh 的 canonical 是 33(主矩阵 K∈[2,4] 的最长帧数),但 K=1 的档只有 9 帧:
+#   * 训练侧 dataset_loader 只在 T > max_frames 时截断,33 对 9 帧是空操作(无害);
+#   * 评估侧 evaluate.py 用 min(frame_num, sample.num_frames),33 也会被夹到 9(无害);
+# 两边都不会错,但日志里恒显示 33 会让人以为这些档跟主线同长度,排障时极其误导。
+# 显式设成该档最长帧数,让 manifest 的 frame_num 字段说真话。
+# =============================================================================
+export MAX_FRAMES="$RMAXFRAMES"
+export SEED="$RSEED" SPLIT_SEED="$RSPLITSEED" EPOCHS="$REPOCHS" LORA_TARGETS="$RTARGETS"
+EVAL_N="${LADDER_EVAL_N:-0}"   # 0 = 全量 val
+
+echo "==================================================================="
+echo "[51] array_index=$IDX / $RNRUNGS 档   rung=$RID"
+echo "[51] $RLABEL"
+echo "[51] pose_mode=$POSE_MODE  r=$RANK/α=$ALPHA  epochs=$EPOCHS  MAX_FRAMES=$MAX_FRAMES"
+echo "[51] data=$RH5"
+echo "==================================================================="
+
+# ---- 1) 训练 ----
+if ! done_p "p51_${RID}_train"; then
+    # 每个 rung 是独立 H5，主库 official_splits 的索引空间不适用。
+    TRAIN_SPLIT_FILE= train_lora "ladder_$RID" "$RANK" "$ALPHA" "$RH5" "$OUT"
+    stamp "p51_${RID}_train"
+fi
+SPLIT="$OUT/train_val_split.json"
+[ -f "$SPLIT" ] || { echo "FATAL: 缺 $SPLIT(训练没写出划分?)" >&2; exit 1; }
+
+# ---- 2) LoRA 臂 ----
+if ! done_p "p51_${RID}_eval_lora"; then
+    eval_lora "ladder_$RID" "$OUT/best_checkpoint" "$RH5" "$SPLIT" "$RDIR/eval_lora" "$EVAL_N"
+    stamp "p51_${RID}_eval_lora"
+fi
+
+# ---- 3) 同档 baseline 臂(Δ 的分母)----
+# 必须与 LoRA 臂同数据、同 split、同 max_samples,否则 Δ 里混进采样差异。
+if ! done_p "p51_${RID}_eval_base"; then
+    eval_base "ladder_$RID" "$RH5" "$SPLIT" "$RDIR/eval_base" "$EVAL_N"
+    stamp "p51_${RID}_eval_base"
+fi
+
+# ---- 4) 该档实测仪器地板(纯 CPU,几分钟)----
+# 在【GT 视频】上跑同一条 Farnebäck 方向管线:这就是"完美模型能拿到的最好成绩",
+# 即该档的地板。它同时吃掉两部分:prompt 四方位量化的残差 + 光流估计噪声。
+# 逐档实测,报告才敢说"这两档的差异在仪器分辨率之内/之外"。
+if [ "${SKIP_GT_FLOOR:-0}" != "1" ] && ! done_p "p51_${RID}_gtfloor"; then
+    _rc=0
+    $PY "$ROOT/server_run/validate_direction_metric.py" \
+        --gt-h5 "$RH5" --split "$SPLIT" \
+        -o "$RDIR/direction_validation.json" \
+        2>&1 | tee "$LOGS/p51_${RID}_gtfloor.log" || _rc=$?
+    if [ "$_rc" -eq 0 ]; then
+        stamp "p51_${RID}_gtfloor"
+    else
+        # 不阻塞:地板缺失时 ladder_report.py 会退回解析值并显式标注"未实测"。
+        echo "[51][注意] $RID 的 GT 地板测量失败(exit $_rc),报告将回退到解析地板并标注"
+    fi
+fi
+
+# 训评都成功后清 epoch checkpoint(只留 best):11 档 × 5 epoch 的优化器态会吃掉上百 GB。
+# 只在本档自己的 $OUT 里删,绝不触碰别的档或主 WORK。
+if done_p "p51_${RID}_train" && done_p "p51_${RID}_eval_lora" && done_p "p51_${RID}_eval_base"; then
+    find "$OUT" -maxdepth 1 -type d -name 'checkpoint-epoch-*' -exec rm -rf {} + 2>/dev/null || true
+    echo "[cleanup] 已清理 $OUT/checkpoint-epoch-*(保留 best_checkpoint)"
+fi
+
+echo "[ok] 51 第 $IDX 档 $RID 完成(train + eval_lora + eval_base)"
+echo "     全部档跑完后在登录节点出报告(纯 CPU):"
+echo "       python server_run/ladder_report.py --ladder-root $LADDER_ROOT"

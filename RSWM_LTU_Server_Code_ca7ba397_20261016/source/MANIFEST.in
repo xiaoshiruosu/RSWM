@@ -1,0 +1,14 @@
+include README.md NOTICE.md pyproject.toml setup.py MANIFEST.in
+recursive-include src/rswm_inria *.py
+recursive-include src/rswm_inria/configs *.json
+recursive-include tests *.py
+recursive-include scripts *.py
+recursive-include docs *.md
+prune evidence
+prune data
+prune runs
+prune weights
+prune build
+prune dist
+global-exclude *.png *.jpg *.jpeg *.tif *.tiff *.npz *.pt *.safetensors *.pyc
+global-exclude .env .env.*

@@ -1,0 +1,17 @@
+{
+  "schema": "rsroll.baseline_card/v1",
+  "name": "gt_oracle",
+  "source": "local metric ceiling",
+  "checkpoint": null,
+  "native_input": "ground-truth rollout",
+  "native_output": "ground-truth rollout",
+  "number_of_condition_views": 1,
+  "uses_camera_pose": true,
+  "uses_future_gt": true,
+  "training_data": "not applicable",
+  "adaptation": "pass ground truth through",
+  "notes": "Metric ceiling only. Never rank as a method.",
+  "trajectory_support": "ground truth",
+  "comparison_track": "metric_ceiling",
+  "main_table_eligible": false
+}

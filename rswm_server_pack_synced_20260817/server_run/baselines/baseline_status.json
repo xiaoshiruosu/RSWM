@@ -1,0 +1,134 @@
+{
+  "schema_version": 2,
+  "generated_by": "RS-Roll baseline extension audit and adapter layer",
+  "status_semantics": {
+    "implemented": "The local adapter/generator code path exists; this does not imply upstream model availability.",
+    "configured": "A card and reproducible input/output bridge are present.",
+    "smoke_tested": "A synthetic/unit path has run successfully.",
+    "gpu_tested": "The real model/checkpoint has completed the required GPU smoke chain.",
+    "trained": "The required experiment checkpoint was actually trained.",
+    "evaluated": "The method completed the frozen official test manifest.",
+    "result_available": "A fair, auditable number is available for paper export."
+  },
+  "warning": "At extension start every legacy tested/result flag was false and no model weights or baseline result files were present. Adapter code must never be described as an experimental result.",
+  "baselines": [
+    {
+      "name": "gt_oracle", "kind": "diagnostic", "implemented": true,
+      "configured": true, "smoke_tested": false, "gpu_tested": false,
+      "trained": false, "evaluated": false, "tested": false,
+      "result_available": false, "blocking_dependency": null,
+      "note": "Metric ceiling using future GT; never a deployable method or main-table competitor."
+    },
+    {
+      "name": "deterministic_translation", "kind": "diagnostic", "implemented": true,
+      "configured": true, "smoke_tested": false, "gpu_tested": false,
+      "trained": false, "evaluated": false, "tested": false,
+      "result_available": false, "blocking_dependency": null,
+      "note": "Construction-aware crop upper-bound proxy using privileged full_scene and waypoints."
+    },
+    {
+      "name": "persistence", "kind": "diagnostic", "implemented": true,
+      "configured": true, "smoke_tested": true, "gpu_tested": false,
+      "trained": false, "evaluated": false, "tested": true,
+      "result_available": false, "blocking_dependency": null,
+      "note": "Synthetic CPU generate -> standard output -> future-only evaluator smoke passed for T=17/25/33 and heterogeneous condition sizes; official manifest evaluation has not run."
+    },
+    {
+      "name": "random_direction_translation", "kind": "diagnostic", "implemented": true,
+      "configured": true, "smoke_tested": false, "gpu_tested": false,
+      "trained": false, "evaluated": false, "tested": false,
+      "result_available": false, "blocking_dependency": null,
+      "note": "Wrong-direction metric diagnostic using privileged construction data."
+    },
+    {
+      "name": "mvsplat360", "kind": "external_generative", "implemented": false,
+      "configured": true, "smoke_tested": false, "gpu_tested": false,
+      "trained": false, "evaluated": false, "tested": false,
+      "result_available": false,
+      "blocking_dependency": "Upstream repository, separate environment and required checkpoints are absent; the real ModelWrapper contract has not been verified.",
+      "note": "Existing output bridge only. Multi-view input makes this a separate-track comparison."
+    },
+    {
+      "name": "image_outpainting", "kind": "external_generative", "implemented": true,
+      "configured": true, "smoke_tested": false, "gpu_tested": false,
+      "trained": false, "evaluated": false, "tested": false,
+      "result_available": false,
+      "blocking_dependency": "Real stabilityai/stable-diffusion-2-inpainting checkpoint is not staged and no real GPU run exists.",
+      "note": "Translate-and-inpaint rollout adapter exists; native output is an image, not video."
+    },
+    {
+      "name": "rswise_recursive", "kind": "external_generative", "implemented": false,
+      "configured": false, "smoke_tested": false, "gpu_tested": false,
+      "trained": false, "evaluated": false, "tested": false,
+      "result_available": false,
+      "blocking_dependency": "No verified official RemoteBAGEL/RSWISE model code or checkpoint; local function is a NotImplementedError stub.",
+      "note": "Native method is single-image directional extrapolation."
+    },
+    {
+      "name": "rswise_recursive_bridge", "kind": "external_generative", "implemented": true,
+      "configured": true, "smoke_tested": false, "gpu_tested": false,
+      "trained": false, "evaluated": false, "tested": false,
+      "result_available": false,
+      "blocking_dependency": "Requires an external producer to emit explicit T-frame recursive/per-waypoint rollout products.",
+      "note": "Adapter only; continuous rollout is an RS-Roll adaptation, not native RSWISE output."
+    },
+    {
+      "name": "frozen_i2v", "kind": "external_generative", "implemented": true,
+      "configured": true, "smoke_tested": false, "gpu_tested": false,
+      "trained": false, "evaluated": false, "tested": false,
+      "result_available": false,
+      "blocking_dependency": "Base LingBot-World checkpoint and saved evaluation rollouts are absent locally.",
+      "note": "Output bridge maps the existing frozen evaluator into the shared benchmark contract."
+    },
+    {
+      "name": "video_no_camera", "kind": "external_generative", "implemented": true,
+      "configured": true, "smoke_tested": false, "gpu_tested": false,
+      "trained": false, "evaluated": false, "tested": false,
+      "result_available": false,
+      "blocking_dependency": "Matched no-camera checkpoint and saved rollouts do not exist locally.",
+      "note": "Same-backbone result bridge; camera condition must be OFF in producer metadata."
+    },
+    {
+      "name": "rsroll_native_attn_only_r16", "kind": "external_generative", "implemented": true,
+      "configured": true, "smoke_tested": false, "gpu_tested": false,
+      "trained": false, "evaluated": false, "tested": false,
+      "result_available": false, "blocking_dependency": "Matched LoRA checkpoint/result absent.",
+      "note": "Native pose, attn_only, rank 16 matched ablation bridge."
+    },
+    {
+      "name": "rsroll_native_attn_cam_r16", "kind": "external_generative", "implemented": true,
+      "configured": true, "smoke_tested": false, "gpu_tested": false,
+      "trained": false, "evaluated": false, "tested": false,
+      "result_available": false, "blocking_dependency": "Main LoRA checkpoint/result absent.",
+      "note": "Native pose, attn_cam, rank 16 main-arm bridge."
+    },
+    {
+      "name": "rsroll_drop_attn_only_r16", "kind": "external_generative", "implemented": true,
+      "configured": true, "smoke_tested": false, "gpu_tested": false,
+      "trained": false, "evaluated": false, "tested": false,
+      "result_available": false, "blocking_dependency": "Matched LoRA checkpoint/result absent.",
+      "note": "Drop pose, attn_only, rank 16 matched ablation bridge."
+    },
+    {
+      "name": "rsroll_drop_attn_cam_r16", "kind": "external_generative", "implemented": true,
+      "configured": true, "smoke_tested": false, "gpu_tested": false,
+      "trained": false, "evaluated": false, "tested": false,
+      "result_available": false, "blocking_dependency": "Matched LoRA checkpoint/result absent.",
+      "note": "Drop pose, attn_cam target set, rank 16 matched ablation bridge."
+    },
+    {
+      "name": "rsroll_native_all_r16", "kind": "external_generative", "implemented": true,
+      "configured": true, "smoke_tested": false, "gpu_tested": false,
+      "trained": false, "evaluated": false, "tested": false,
+      "result_available": false, "blocking_dependency": "Optional all-target LoRA checkpoint/result absent.",
+      "note": "Native pose, all targets, rank 16 optional matched ablation bridge."
+    },
+    {
+      "name": "rsroll_drop_all_r16", "kind": "external_generative", "implemented": true,
+      "configured": true, "smoke_tested": false, "gpu_tested": false,
+      "trained": false, "evaluated": false, "tested": false,
+      "result_available": false, "blocking_dependency": "Optional all-target LoRA checkpoint/result absent.",
+      "note": "Drop pose, all targets, rank 16 optional matched ablation bridge."
+    }
+  ]
+}

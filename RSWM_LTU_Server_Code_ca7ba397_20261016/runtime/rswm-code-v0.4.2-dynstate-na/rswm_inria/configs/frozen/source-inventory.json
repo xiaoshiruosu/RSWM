@@ -1,0 +1,2716 @@
+{
+  "files": [
+    {
+      "lfs_sha256": null,
+      "path": ".gitattributes",
+      "size_bytes": 2348
+    },
+    {
+      "lfs_sha256": null,
+      "path": "README.md",
+      "size_bytes": 5496
+    },
+    {
+      "lfs_sha256": "068bdc5bb7a1cb6212d8e5495e41452b8fb9aefdaadc8fc31cb36adbefe2ea93",
+      "path": "data/test/images/bellingham1.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "ca57b7beb4ba796ec6c5605580dbfdc53cb89b1f66c51d906caf8a9fa231b151",
+      "path": "data/test/images/bellingham10.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "d0070b49d2d8cda26a1f8be041abc0a7ab55d49670dc24de446a5be9d7de7d2c",
+      "path": "data/test/images/bellingham11.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "3a47cf7a127874ac03aedc44f0e99cb04477fe48f1284b83326c2b67371e3ae1",
+      "path": "data/test/images/bellingham12.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "fea2ee8cbc326b797b62bf9056bf6befb736c349796078024809f3b1976bb1c4",
+      "path": "data/test/images/bellingham13.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "56f32045086a10f9e17a590af7e8d6a0e2d8cf44cd948482d9a7aa2d92f0417d",
+      "path": "data/test/images/bellingham14.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "f63da4e8b1bb948c4ecf1f067ce261a447eb3e8dd9ece14a98c48a206ae643b8",
+      "path": "data/test/images/bellingham15.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "f8aabd20629851f0a12573630dabde8e40bc20665aeee356f01b399202f38951",
+      "path": "data/test/images/bellingham16.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "6561749edcd5c0d8fc7c8392587b2754eeff8063c46b434f0f00a7a9b68857d2",
+      "path": "data/test/images/bellingham17.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "1bf4836a726df0058c9307359ef121d4b35acc0232dcb4de71090997febc56c2",
+      "path": "data/test/images/bellingham18.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "ac6cd6e51b79178dd52ee924b4d75fe50044b390205f3036cee2d120f229b5e3",
+      "path": "data/test/images/bellingham19.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "2d27ab73dec6121d8682019f9043483e40d877e0b4c5182d0be55743fe57cb0f",
+      "path": "data/test/images/bellingham2.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "abdf0ec0a6f656f6bf5eb594214c7901870bea7544bd707f602c86a543fa8f18",
+      "path": "data/test/images/bellingham20.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "20be2ab50c41369f2bf86e9278887ec57960bbf2068d802951b107880d8244c7",
+      "path": "data/test/images/bellingham21.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "0090765e53508959a95a34fc88455b02bea0e2396fe2a4da263ed0c3fcc4be30",
+      "path": "data/test/images/bellingham22.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "4d154775de42d56f6762076a3e75f9ab1879318abfe3a86f504fae01b128a412",
+      "path": "data/test/images/bellingham23.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "8439f3bcce380107f65e044824aae87b1784660bbedd991515d3cf5cc681edeb",
+      "path": "data/test/images/bellingham24.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "3c8f5136523fb3fb3981dee65b539fb79f954f0f03bb2b6d634fa2a6f737b3f8",
+      "path": "data/test/images/bellingham25.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "72b1d706ac5a3756abc64d0a0c8cf102b534fdedf3bd67bf5021047f23100fed",
+      "path": "data/test/images/bellingham26.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "e2337231dfd5e16772f0a45951e2579a4ffc5eb76cac17025126ccba05d0236c",
+      "path": "data/test/images/bellingham27.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "7163b2fbd27813b56eac02c5a1051b0e80983c1d921e3b667e14a63f2808218b",
+      "path": "data/test/images/bellingham28.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "be35e402631793e6a92f4e175a68efbd748e5a3ed5b07eca2cacfeb527283db0",
+      "path": "data/test/images/bellingham29.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "94991fbb3592ab1a908dd703a19a49a6e96462e87dccc8800fb4ab981729ec9a",
+      "path": "data/test/images/bellingham3.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "a18ebdb7d61e90483583468fbba6d983ef0951d47aad646c71c2748472c95b00",
+      "path": "data/test/images/bellingham30.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "1fffe06c47f5a2b7bcfa9239f90ef0897f89bdba916395970ada2d711539b133",
+      "path": "data/test/images/bellingham31.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "79efcdc297f0ade0fd3a69fd06bf9e7bd143e951a3762f277855d03b6ecea716",
+      "path": "data/test/images/bellingham32.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "5b30c4d017e71c41d7f2960551ae904cef2fc3754c5af3f0077bac736c8afcd0",
+      "path": "data/test/images/bellingham33.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "62ce4443b6aa6c7ba773bee0cde466adb838295f375e5b95ea9e28f1ab60e5d8",
+      "path": "data/test/images/bellingham34.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "2ff286d3b2c63298168317065604ee9940050d039fee37ecb9bd54f67109063a",
+      "path": "data/test/images/bellingham35.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "f12e36b753817dc5452a0ac0d39ab29be1d3db0be68a691df67611bd244d93e1",
+      "path": "data/test/images/bellingham36.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "83b592cad4f82397a551207115e44b789d15b8494cb774fa08d467705fe75c82",
+      "path": "data/test/images/bellingham4.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "e3b3aab4bd57e95f5b41c04de41662df2329a1d88b4dd2948970ca10c7912f75",
+      "path": "data/test/images/bellingham5.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "a4b79426a452a99977727f86f8ef46c635692cf3aab881ba3498b9930c4fc3b9",
+      "path": "data/test/images/bellingham6.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "38028bd4f11448e6e4b1024bc2008b3ec17d22e6038082e314a073eeadfc382a",
+      "path": "data/test/images/bellingham7.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "67e4b951a3b51eb74e5edc3656867a9f5536077a95e7366ba15a1493d0c253dd",
+      "path": "data/test/images/bellingham8.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "164bc5b5d9216cfc3bcec54881849e55aa86a7e994d6bbb0f0cd16b00b2fd891",
+      "path": "data/test/images/bellingham9.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "b39071e4656ccdc57462416d20d0067ca2c7df8348dbf747cc3c2bb1bfd10641",
+      "path": "data/test/images/bloomington1.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "315f9c7af4812b5b1aefa80427e8318f7fd4de1755103d27e6631c2370211fc4",
+      "path": "data/test/images/bloomington10.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "bdea701cff944854dd0d3f009ad117fc095a3e01fc707db37f93bda765aae7d6",
+      "path": "data/test/images/bloomington11.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "d675463b2f46f4c415d395cb2fb83c2f7e8c26d813fbdd48139d356ac7930575",
+      "path": "data/test/images/bloomington12.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "8ee18908c425b2573268b5ced03eaa8c0cb92dbd090d8752cfe766bcc84f7048",
+      "path": "data/test/images/bloomington13.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "684eedf7de367e891e53073f9e4186ed0a3dce62842733e4de6a8b70be79271b",
+      "path": "data/test/images/bloomington14.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "1a522cb5e0ab84ac9ee781b51603379a4acce8ed14a525e5b91dfbbd717acdb6",
+      "path": "data/test/images/bloomington15.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "cd55deeccc940512c09b36db2036ac7ec37995de266dbfe603c310684029e05c",
+      "path": "data/test/images/bloomington16.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "309134b15e590990a484d0a9ffa8d2a275cecfb18e317c230f22f05dbd6e6ee7",
+      "path": "data/test/images/bloomington17.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "f72161b5de1215975caa2b93ffc8041396e2f6652a2897f63040e0160b3d4ccb",
+      "path": "data/test/images/bloomington18.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "4e51ffce392ccce2b2156e97866db35ce4f32d8632b94cfa899612d052afbade",
+      "path": "data/test/images/bloomington19.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "7ca186b94d1e14a12b8a39524cdb0025d2397e32d06f10ae33ff251f0da9dc15",
+      "path": "data/test/images/bloomington2.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "0adc5cda865a7e608ee1b146a4c0f8e653efa4ba828cee429bbd8e62f8ef654b",
+      "path": "data/test/images/bloomington20.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "c58bcdfdc090f69cadc5ccde1923f56920863fe45e9c52a1cf6d0d73294facdb",
+      "path": "data/test/images/bloomington21.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "a32d66d7f2acea1c61111858315d10e213d49a53c62ea75a4dcd3d797c55aee1",
+      "path": "data/test/images/bloomington22.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "37abf181ca6fe27f287b46320dd0231aedf5697c4c01a7b1441201c121ab802d",
+      "path": "data/test/images/bloomington23.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "8b4261993d0475f7c50e2d0b1f7062becaeb72ade89f9c4c661324cea94c1b6b",
+      "path": "data/test/images/bloomington24.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "3d657898fd809736f001c334237b14946cec566d12ceb9dc87cc239110bf9302",
+      "path": "data/test/images/bloomington25.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "2f7c953c380718f9f343d6d3543d6b9cdf9ec15cb94ebbc1b5bfd5e734151865",
+      "path": "data/test/images/bloomington26.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "f40927ab7a316ac1495bdbe586ed79d9a404ecc8e03e6e07c5bae9dd2510f740",
+      "path": "data/test/images/bloomington27.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "a8673ca6ebf0a287a8ab05305a7d2ff7233e1988e2703000431f135a491a6cb5",
+      "path": "data/test/images/bloomington28.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "a4a86652dc33e138df1e8a840d36ae69ec2722aa7c7577909d7b47655084226c",
+      "path": "data/test/images/bloomington29.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "0da46096f2da233b783888520b7ed2566364450e7babddc4830d7df04c7bda61",
+      "path": "data/test/images/bloomington3.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "bca985e8bd7260f9631a28ff04a1d8837033230773aec3b145b43b4e41bc38fd",
+      "path": "data/test/images/bloomington30.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "75b2df2e44a2aac0556aaabd72000430158e0333abd71e4e7f109b35400d0264",
+      "path": "data/test/images/bloomington31.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "ef32fb4c8ddf623e54009a95ad54e9c4a54e2fbaf64613d15a37fb178a2cf99e",
+      "path": "data/test/images/bloomington32.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "7520b8381e84ca29483489fc3535e43b8187dc0de4a07df33a15c25f402ec32b",
+      "path": "data/test/images/bloomington33.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "e00bb58eabf642224b0b547f3abb64f7fa92366de87d731d8cc57316c0d6b457",
+      "path": "data/test/images/bloomington34.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "5dcdcd3e4ed22d1031d3538dd5388cbc6f4ce29146b5cb63c8e95268ed3cd27f",
+      "path": "data/test/images/bloomington35.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "dd3c771744fe2c393fa6a0fd2c0591a4fce80b9ef8a1cc8627e0be4b72a2e268",
+      "path": "data/test/images/bloomington36.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "3520231be4f83d91b69b32a7c78d257bf9b25fbc0f2b4fb71d9db766a97622a3",
+      "path": "data/test/images/bloomington4.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "75aa5b55cff641ebc3d03736d3d21c1c424f7bed401e4c005471f6c90667444d",
+      "path": "data/test/images/bloomington5.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "85c528ed2dce43f30eaedc9a72e298b538d7d16880ac77f5026ed9a701d7cdde",
+      "path": "data/test/images/bloomington6.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "9f44454dc3d66462ac6dbcbfea5d01e0326274d45b8dbe6ce6f860edeff0a4be",
+      "path": "data/test/images/bloomington7.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "f3e54a6235b9990113a9137139d56cd2530c1062a883e658780c83a314903846",
+      "path": "data/test/images/bloomington8.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "eac3ff15bb9d4ad19bcd8ec2c313c67ab5201bebbf5c5a9bfdba68dc70498886",
+      "path": "data/test/images/bloomington9.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "a458ba9bd8b5ac43f875bc9c0cdc304474e2b466513257497c89dcf79f8363db",
+      "path": "data/test/images/innsbruck1.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "54bde8b8c5ea7407235950285e57e8d4a36cbd3acff19591896469635657d6ca",
+      "path": "data/test/images/innsbruck10.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "2731f531578bd1856c78855e289cac5464497822cc064f5da9b03cb76887b1b3",
+      "path": "data/test/images/innsbruck11.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "af74888e487219200c1418c020820cddd57b550415d6df2945f918f2ad83c500",
+      "path": "data/test/images/innsbruck12.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "3a1f2ebc6f56bc8838c5d5467487e285daeb319b41c60f73fed57bc8aca24266",
+      "path": "data/test/images/innsbruck13.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "afcac8350ee88bc0396cdb3503aefc4152a1d2a54135a1e4b78bfb61dd52c7bb",
+      "path": "data/test/images/innsbruck14.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "70b2f21d158f094ef94f040773ac35ddb6155c440d3bb1df23dea5c3666cf5fe",
+      "path": "data/test/images/innsbruck15.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "83d30e73e29e151a1014713d2c079aa496f67dae06f9bef3a5921f963df0b91a",
+      "path": "data/test/images/innsbruck16.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "e64716c8bbcfc07470a835a2a3bc0c56fd4191bfb471d7c4ca4cb5ab28e75c3c",
+      "path": "data/test/images/innsbruck17.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "3574dffc0b668d218c07461ae259458b940164d0438068ee1d26f8c115e859ad",
+      "path": "data/test/images/innsbruck18.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "f3f9c1cda97c73ea50fb8bc7ebad520d65f58acfd1402570ef6c00069d8bd1d8",
+      "path": "data/test/images/innsbruck19.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "65e35e8f9492429c88602d96b2d1e4cede2a1a6cbae47978e235ac794e16f813",
+      "path": "data/test/images/innsbruck2.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "fe99b1728a7abec49dd34e742001c5e84a9d24b4c5f058e45cb9677dacd72d74",
+      "path": "data/test/images/innsbruck20.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "560bd0d6fe7f41f44e8fb9e0f135d1b7454c875275f569041735533037b4a78e",
+      "path": "data/test/images/innsbruck21.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "c45e7f966e0a7b9a8facd25396e4a4aacb72b97fe7a73bb4a1a4e5a8375708d7",
+      "path": "data/test/images/innsbruck22.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "9b6d49a2866022fad75a2fa7257b2e83b37cb4313bd791cb48e9d7b417aa7f5b",
+      "path": "data/test/images/innsbruck23.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "50d1c8a4020defc04730e03e0b82548548c753c5dbaba486b38447feb7518179",
+      "path": "data/test/images/innsbruck24.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "6a6344fecb494f4d55568e746516792e015e015ece201b37c2ede52a116f1370",
+      "path": "data/test/images/innsbruck25.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "fded44953d0d3eaf754d0ef3f87268c61ae1360667fad085d694e8516977a1ca",
+      "path": "data/test/images/innsbruck26.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "bde0a69e5894f8bd5fc16304f5969f70d6c59f8b7f54fd64ff7194ffed689cb1",
+      "path": "data/test/images/innsbruck27.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "e206a745b3c6ef57aeeb5dec9c89db7c76e72878ac70633bd2420165e5eb2d5a",
+      "path": "data/test/images/innsbruck28.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "d67f3d53610d8c4e467b51c153a2153ef9a551248dd8e4c672443124bdbebe40",
+      "path": "data/test/images/innsbruck29.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "2f81690f572333ffdbf5dccb12abc2ce5f4241338375207575296c42f439b337",
+      "path": "data/test/images/innsbruck3.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "c8ee4a621a855bac9174f5f94a8355e662cab249f9ac1719e4e74710a9e98529",
+      "path": "data/test/images/innsbruck30.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "03432188d552994dc696a7df75513ec9c78add141e7d9bc3ff29a69322fdeab4",
+      "path": "data/test/images/innsbruck31.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "3d15801635529881161d3c7e28e4cad6cc366cd4363fc598614c55e43532eba4",
+      "path": "data/test/images/innsbruck32.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "5b78a2b3fd64bd2a3fae3f1dbb51a1b4230c0a8004aa42b436c4b38982aca36d",
+      "path": "data/test/images/innsbruck33.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "12131c086adb9b86dfff40ccf86ef8e8e84d2d6e8bfe19b66d080744c4b22ea4",
+      "path": "data/test/images/innsbruck34.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "57799d1145e99ba416dcfba2da34684838a8e19c62ecfccc5a089945c27582b5",
+      "path": "data/test/images/innsbruck35.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "cda7e24ee6e55f0156cc7ee129713844dfb9f98e21f33e17c35dcbfcb9f795c9",
+      "path": "data/test/images/innsbruck36.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "fe0bd9eda92514ace235b415a16f0034300964c91a05626f3fbebd417d4414d7",
+      "path": "data/test/images/innsbruck4.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "1762a48a313256621780e2db48cdf081232ac7ef0979c9995f29e05aaad9902b",
+      "path": "data/test/images/innsbruck5.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "d020fe9322a99a3e44f43bbcad27d42d94fb13c26c268d14ed6b37fa965b73f3",
+      "path": "data/test/images/innsbruck6.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "27f6106d1fce6069631443734d3edf7df2415a84167941eae4a1dd8266bc27e0",
+      "path": "data/test/images/innsbruck7.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "18689343cbdefb9976c42cea5f41b19a10ba40c4e24fe9a3cd15f254ced18a2b",
+      "path": "data/test/images/innsbruck8.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "5e2767528c2d60dcbfa9699b4e491836675d9adae347d4dbe26115530242f0bb",
+      "path": "data/test/images/innsbruck9.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "c369328721a90779a0ef7b21c4cd7ac6b530db06219aedda92153e398b2d3b6b",
+      "path": "data/test/images/sfo1.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "10b9852153d0578d4741ad7be4fcc6db7ab1e9e35568e14ab0aa6703ed2cb91d",
+      "path": "data/test/images/sfo10.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "e57d573c0eb3642910ba08930dc3e4af69ed72bfaf5b1fecb09425f5ce44dc69",
+      "path": "data/test/images/sfo11.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "c7486809978a8d79224b701dc59f120a08b7803d9f21d897556e85c572a87f50",
+      "path": "data/test/images/sfo12.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "484fc54a287b594e0450a450996ebee63da6c49da3aa33151fba88fa7db3f56e",
+      "path": "data/test/images/sfo13.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "18822c0ab063598f8b49dfcf7b76ff7755be1c97d1639f05180090dc691dad9d",
+      "path": "data/test/images/sfo14.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "6051eee23b2adf52947e3a896e28fca8ca8c7226201586a30afb26293b2416e3",
+      "path": "data/test/images/sfo15.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "e40a5260b844a2512cadbc6bd18fd7b0cf6c3700b08138fac632d788d8e1d0ab",
+      "path": "data/test/images/sfo16.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "74236b36bee85d955571480fbc3a54db00af4dcd2583ded06ddff3f5e56cecfc",
+      "path": "data/test/images/sfo17.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "a225d85875d81fafd6f9248d039e62be30b12098063a842eb4a103290becfc2c",
+      "path": "data/test/images/sfo18.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "a7daf6be8df958d6d11c910dd133f10f71fb0dc0256f0d275ea88991b70e22d8",
+      "path": "data/test/images/sfo19.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "9da4da8704c9833bf6f9d25356d8121e82e5f50dc380a22906dec4495cbcb56a",
+      "path": "data/test/images/sfo2.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "abb7500f659a4d4425ceaf86a735f3b3eda8960f18338d0a0653b80e75a276de",
+      "path": "data/test/images/sfo20.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "dddc90215c84a6651f707a128d6c7c3b520f27eac21962c9fe2d3375a67d40d7",
+      "path": "data/test/images/sfo21.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "d124776915fa4a4113df718fb2aa58904b202a173d265641470f761bde1ba9ce",
+      "path": "data/test/images/sfo22.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "8aabe1054d84744760d91790b4d4d5ea05f31181cc5e984f0f07cf0ad6954fcf",
+      "path": "data/test/images/sfo23.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "e843d6e90f64d8b0af19d28aa8f6186204d702271b529766401f71801f3d3930",
+      "path": "data/test/images/sfo24.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "01881c18e04051840618be075a43bb9e254a0ac68faf08ffffe0729791c87705",
+      "path": "data/test/images/sfo25.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "012fab55efc2139beff37b0ffee14d275a5f495a4556718393ca4b5ca8845af6",
+      "path": "data/test/images/sfo26.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "67a3aa48de502abc271b546d6547d3fde89f467d1037b220b9986739dd3bd06a",
+      "path": "data/test/images/sfo27.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "28d979ff63b6c3c59e61f57deeff6cbbce0193557cfcee266de63b4a35f3ba21",
+      "path": "data/test/images/sfo28.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "9176d1e5cb9d8037af208939234b91c2861129d21bcf5a8e7e196ca8524650c1",
+      "path": "data/test/images/sfo29.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "894123091510f746b95dffadba752b981064f13d0136a85df0e71749e92344bb",
+      "path": "data/test/images/sfo3.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "2e1d55d70b35ef010b162d2792a2e5ad2b539a9ec397f3f69c9cd07424748eaf",
+      "path": "data/test/images/sfo30.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "3ee389e710a8927ecea330acec242cc27e653274edafe206b60919222905d4ea",
+      "path": "data/test/images/sfo31.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "7ba26c24b32c47f111fbda8bca7613b9c18cf57ba7d382ace4cdb0af72c138e9",
+      "path": "data/test/images/sfo32.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "caf6cc976f39e51e1420da4feaa909360009326b496aecc552a7062cd16a7926",
+      "path": "data/test/images/sfo33.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "3eee861c0c028de06d2e731df281550624b224c45a5fc64cdc665d526c03e7e2",
+      "path": "data/test/images/sfo34.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "508938218aeee2fd6cf7d4adde0e881ba9eefdd632529fce055570f74ba10186",
+      "path": "data/test/images/sfo35.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "30dfe6de8e8ebf33ffd53eeb12bfe942ff529560396a6772153e59b55fe3862e",
+      "path": "data/test/images/sfo36.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "9d0677dd9300ecd603be6ab3711e2f31a8f3f284557010241b957e489b7ceb9a",
+      "path": "data/test/images/sfo4.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "f2110539ccb6a54223b0525172156b5e86a90234a2192fe6b2a0ad366751116b",
+      "path": "data/test/images/sfo5.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "e593c75aee57f7d9455d8724452b2d997465941d137001e40fa1c03c8693ff9c",
+      "path": "data/test/images/sfo6.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "d228f663d70f46084b914af1dcfdc06fa79ee10362e64a7871147d5c7f071e54",
+      "path": "data/test/images/sfo7.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "c458f94e21b5d52f85d143b0e7734dbd41c0fcca8445892073aed78ae2fd1c94",
+      "path": "data/test/images/sfo8.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "6dad3dc95c05772240975c75be71eeafe9a5b55f8cf7277a7d2246fcfb498453",
+      "path": "data/test/images/sfo9.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "811bc20cd40f4685f2a78ff3a7dbcd697d2cdede3034d9898f99e88e292eac6a",
+      "path": "data/test/images/tyrol-e1.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "70e765b29c5002335e5e12a984966f0196ae781f34bc07d7cf6f92d01867157a",
+      "path": "data/test/images/tyrol-e10.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "f9aad40df0e3c001c9bcf371b0e4a694164d7ce3e5213d7cabdc2887abc85d33",
+      "path": "data/test/images/tyrol-e11.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "e78cf08be49d7ed128538c58920a2e0195f5280522a1fc063ce9b8c0bd05b787",
+      "path": "data/test/images/tyrol-e12.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "bedfe6f9504913bef152c20dfe97849ceed7b4212f94ec6ab4d2d4319c7225c8",
+      "path": "data/test/images/tyrol-e13.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "84a793363fa9403d31ee39a88bfe39f71d97f2b3ac8fb094c51cd27191696e3b",
+      "path": "data/test/images/tyrol-e14.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "2cf92062a7acc6059f839d8734fea9324475ba26a3ed3f7d46dde6cd0e7c130e",
+      "path": "data/test/images/tyrol-e15.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "fbfcb8cdc82e2adcd66b412c3e2a015c034a1cdd9370914998d9808358cf99f4",
+      "path": "data/test/images/tyrol-e16.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "b4abe7755c62c06eb2445ed3ffcffd1cc042a49a421d110481cecc8cc98002ff",
+      "path": "data/test/images/tyrol-e17.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "d324bdbb66273aab39f71b18cf193d325dff045521a4b4d151a98e0d956fb670",
+      "path": "data/test/images/tyrol-e18.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "16dba11fd54c292ccf99f8ad75f2f49be92c9b2afe902a7eec768292b3865f4b",
+      "path": "data/test/images/tyrol-e19.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "3c8a16418d481d829fbc254e1107d88d878170ccd4bad7e5a6c38db0b996962e",
+      "path": "data/test/images/tyrol-e2.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "c7b3a9a2f3a7dc7c41687ccb84a8eed07497bd4246c20293db8dac019033bf30",
+      "path": "data/test/images/tyrol-e20.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "22319708d59bd1cc9e3dfee3aa25ca020756ee88a9f522f59d8da6af36c6e630",
+      "path": "data/test/images/tyrol-e21.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "b4b93ae0495cd82c5264f944b3536be832d57151bbfeb4bfccc021bd21355b75",
+      "path": "data/test/images/tyrol-e22.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "c50b2478a148f21ee2b1e98c3a45324c47fa4e44e126f8f499190ab61594d307",
+      "path": "data/test/images/tyrol-e23.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "50d43e7f33e4bfdce71c9f163463121634bfbf63edc16c24993107a544279e5d",
+      "path": "data/test/images/tyrol-e24.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "eeac58b5c21fbe74eded7ed34111f4a6a58f5b67863b439510f2c873dcf7704e",
+      "path": "data/test/images/tyrol-e25.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "68c5f56c3dcf963087d297e25cd1e3bc6a9255456ee904114b4b3fd27708d914",
+      "path": "data/test/images/tyrol-e26.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "0946e6f27d5be965606cedbc26e7c63dbbdc30f182d63f2b26bcdc58a2fa0779",
+      "path": "data/test/images/tyrol-e27.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "8c9d3ac913e3dc1e39bedb6c2cb2b910a7569df6058ca86f5417b65281109264",
+      "path": "data/test/images/tyrol-e28.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "8127c6198df64184070f357f28d567d7f3020f4e29bad73a36b3fd475e02983c",
+      "path": "data/test/images/tyrol-e29.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "11338d0c9a74372916c08d94765654f28b6e65c169782b6ff3dd8630a3d25186",
+      "path": "data/test/images/tyrol-e3.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "a30c5479415aa2b2f86e005eda0a9020a8007cf2c055c880dc582d5c8cd9c954",
+      "path": "data/test/images/tyrol-e30.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "b964d2c49086db16a3dcab26384047af41f2b4bbe6471bf78e409687c6d2dde2",
+      "path": "data/test/images/tyrol-e31.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "051948733bc23dbbc9cb463017a3ae1dd5c06cd108b4ba58ddba1caca143bff8",
+      "path": "data/test/images/tyrol-e32.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "4045cf63cf0c79ddf3495f4add55e33161e81188da4046ac1956585b1caafbeb",
+      "path": "data/test/images/tyrol-e33.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "e3b34f0a94b476bc5488d3e82067e262807de9025477afc785d09b4649f81843",
+      "path": "data/test/images/tyrol-e34.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "b74570a3041d5b6013038f4fc7d433151a21c68e04af966b033fb3c0ae4ec280",
+      "path": "data/test/images/tyrol-e35.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "ce911d47365270499b928238f1d00fa72ab160543a8bf81e2de4313a7175ca07",
+      "path": "data/test/images/tyrol-e36.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "5df5c195bddc036d63c304477309d57fa580c471fce6a32373942d341203e098",
+      "path": "data/test/images/tyrol-e4.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "ff9d66c550de9948e50f18a57c19e77852c57cb93db9a0cba9c9049dd69fcef9",
+      "path": "data/test/images/tyrol-e5.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "c7c76fc060c7a14009414d851c939ce40a021b0bd710a4eab19c8d4936958cc0",
+      "path": "data/test/images/tyrol-e6.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "24cdf6c9ffc9b60576ad53e07f6e738c0c5de6b734678050c29cdea2180f68b1",
+      "path": "data/test/images/tyrol-e7.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "f12a09d199d2d2c0ba604db66290f36a104a56514220adc40396fb5b19c51835",
+      "path": "data/test/images/tyrol-e8.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "fd649ae6a93486ef566ff4e455d6dacef71611c9319011a60e19dea1c2782188",
+      "path": "data/test/images/tyrol-e9.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "9d9ca20b376aa666de63875abbe7bbbb6e7dedeb4a309aab21b799ef267c8924",
+      "path": "data/train/gt/austin1.tif",
+      "size_bytes": 961879
+    },
+    {
+      "lfs_sha256": "fb9a8a19f8446482acd555826efce635dd9567ac11a26c56702d1aaa2431ed12",
+      "path": "data/train/gt/austin10.tif",
+      "size_bytes": 802103
+    },
+    {
+      "lfs_sha256": "d21395ee15e7b176b314e2e57a6ca45c982735be78070d7c1c3f32ddd104d802",
+      "path": "data/train/gt/austin11.tif",
+      "size_bytes": 954910
+    },
+    {
+      "lfs_sha256": "9595c0af3cacbd723723fed1151387523637e058cf8456b720dac84ddef2edf9",
+      "path": "data/train/gt/austin12.tif",
+      "size_bytes": 1019352
+    },
+    {
+      "lfs_sha256": "add464241fffcac498afb4766a21a93f2cbba155b008890e9cd070551aeeb3c6",
+      "path": "data/train/gt/austin13.tif",
+      "size_bytes": 863885
+    },
+    {
+      "lfs_sha256": "f67967db99e403dd48c64bc5aaf143fd4749d9a140fb0611cbdf68142e6e0507",
+      "path": "data/train/gt/austin14.tif",
+      "size_bytes": 970269
+    },
+    {
+      "lfs_sha256": "2085a6b43872994fba715437a7b9dc68bb01898012a793f1c343f5b7e761d036",
+      "path": "data/train/gt/austin15.tif",
+      "size_bytes": 988546
+    },
+    {
+      "lfs_sha256": "a4d9cb0df3e50ec97bca6860264f783ea6b3ff5bd2151e0d8dde13a4f78bff1f",
+      "path": "data/train/gt/austin16.tif",
+      "size_bytes": 864135
+    },
+    {
+      "lfs_sha256": "b6c2a6429c3a16a6d03f84f5d789a4431fc792262c113a76f7e1340d5898622d",
+      "path": "data/train/gt/austin17.tif",
+      "size_bytes": 979661
+    },
+    {
+      "lfs_sha256": "fc0ebce7d1ee87230fdd3460ea62739d3e83f977c5627d6e06d606b6eefbd17d",
+      "path": "data/train/gt/austin18.tif",
+      "size_bytes": 988062
+    },
+    {
+      "lfs_sha256": "569a4b3ebb25b8c3d183fb11ac3dd4030196dcc7a754a7d6386083f78bd9a3d5",
+      "path": "data/train/gt/austin19.tif",
+      "size_bytes": 891836
+    },
+    {
+      "lfs_sha256": "a974c286d807b8cf2a30567139f3d5fa5166247036d8a164bc87515218c38adb",
+      "path": "data/train/gt/austin2.tif",
+      "size_bytes": 968984
+    },
+    {
+      "lfs_sha256": "4ce1299569a7f2ed5f4fe38b3c410d573f3b6a4e7a5e01205f6b95a8f8d210e6",
+      "path": "data/train/gt/austin20.tif",
+      "size_bytes": 978729
+    },
+    {
+      "lfs_sha256": "e2dac1a836876893840b8137f816325d7bd71564d4bbc9de6040ea61622937b8",
+      "path": "data/train/gt/austin21.tif",
+      "size_bytes": 883409
+    },
+    {
+      "lfs_sha256": "dd027617eae68fd41dee7a44d57dd6a7742d77bc1ef9570046c2b8a247a8251b",
+      "path": "data/train/gt/austin22.tif",
+      "size_bytes": 961469
+    },
+    {
+      "lfs_sha256": "e45ab6b70d1d9b528130ef5c9c5c799c9ce15f0f039276ecec1c2659a3610733",
+      "path": "data/train/gt/austin23.tif",
+      "size_bytes": 879599
+    },
+    {
+      "lfs_sha256": "5076dd46b5e7d4dd6b0fab3c0803ddc18474168e402390d8cae115c98f77123b",
+      "path": "data/train/gt/austin24.tif",
+      "size_bytes": 976751
+    },
+    {
+      "lfs_sha256": "1d9655e9199264eb4c752ac19b221301a90c8d9684b6b555a961fec33503bb82",
+      "path": "data/train/gt/austin25.tif",
+      "size_bytes": 846205
+    },
+    {
+      "lfs_sha256": "84897c3d91a8187e4c395ffc20140ff23d0c9047498e6e5c0d9e200fb1c00bbf",
+      "path": "data/train/gt/austin26.tif",
+      "size_bytes": 884254
+    },
+    {
+      "lfs_sha256": "dffe640e53e33bb0dc462e41757a68edae4590bb8cdb96323d81bf6c52bfa49e",
+      "path": "data/train/gt/austin27.tif",
+      "size_bytes": 862358
+    },
+    {
+      "lfs_sha256": "946edda67438d34e8953996b64246eacfd85fc26909dde5ec4273558647a3d57",
+      "path": "data/train/gt/austin28.tif",
+      "size_bytes": 962035
+    },
+    {
+      "lfs_sha256": "93bd8bbcd9d3545794f7b19125876182abb025592f0148a86e7d174a4ea357b8",
+      "path": "data/train/gt/austin29.tif",
+      "size_bytes": 945028
+    },
+    {
+      "lfs_sha256": "6c49adea51b3989a5bf7fae6d6138817d7eb941bf8549df67a292d9a0366866f",
+      "path": "data/train/gt/austin3.tif",
+      "size_bytes": 956718
+    },
+    {
+      "lfs_sha256": "ba714622fa6577ace3e6af802cb3f4a8fa619e8a78e47684058b0559196ab59c",
+      "path": "data/train/gt/austin30.tif",
+      "size_bytes": 1002768
+    },
+    {
+      "lfs_sha256": "3d180adc6aca65d7381be1e5b3a62b28cf9fac18aae7e835df1eb07c888ddb18",
+      "path": "data/train/gt/austin31.tif",
+      "size_bytes": 814497
+    },
+    {
+      "lfs_sha256": "939adadbd01709653a9f912c44f394f593fc0f3e2a5f777d6bb87e60a5e79627",
+      "path": "data/train/gt/austin32.tif",
+      "size_bytes": 818330
+    },
+    {
+      "lfs_sha256": "82c934a5727a218529e407adcff0c4e2f3e4adb0b6fb2fed99e8f3886b63bb2f",
+      "path": "data/train/gt/austin33.tif",
+      "size_bytes": 782030
+    },
+    {
+      "lfs_sha256": "da85fe8d095cb7ffee72a95ecaac8c58bd735030a5744574ddfbaf93ed7a7fb3",
+      "path": "data/train/gt/austin34.tif",
+      "size_bytes": 922293
+    },
+    {
+      "lfs_sha256": "207aea44c49d5ee5b630d28c360c31be774f44552b947131f2637dfd64204f87",
+      "path": "data/train/gt/austin35.tif",
+      "size_bytes": 897396
+    },
+    {
+      "lfs_sha256": "be95a81851609a5f49f0f8dca7f377b2d6b8bcaf86be28b95b1cac5695c27c1c",
+      "path": "data/train/gt/austin36.tif",
+      "size_bytes": 892322
+    },
+    {
+      "lfs_sha256": "b99ea8fa1ef384c3a8249091113de369b1604b460196924feb550157aaef9053",
+      "path": "data/train/gt/austin4.tif",
+      "size_bytes": 841444
+    },
+    {
+      "lfs_sha256": "5140c8fda2ea865ce1f33824df67cd112d802f7499ba9555282b7a8490d2f0ee",
+      "path": "data/train/gt/austin5.tif",
+      "size_bytes": 837388
+    },
+    {
+      "lfs_sha256": "6a9de5e7143e59596730edc59e9ef13a234c9940aebdd45a09a84f2d98dcdd5b",
+      "path": "data/train/gt/austin6.tif",
+      "size_bytes": 817925
+    },
+    {
+      "lfs_sha256": "cfbdee39dfe771ab783081f23b689c5f82b827874e0c9bbd64c133a8b485fefc",
+      "path": "data/train/gt/austin7.tif",
+      "size_bytes": 928675
+    },
+    {
+      "lfs_sha256": "e93fdd5ed60e93d34a7f82e51b7cc249c2c71cd5293feec838e9d92f5a809216",
+      "path": "data/train/gt/austin8.tif",
+      "size_bytes": 984344
+    },
+    {
+      "lfs_sha256": "f83e6bfe517cd138879d926438412c50eeed9f2a41391e4ea30340a249d2994a",
+      "path": "data/train/gt/austin9.tif",
+      "size_bytes": 1036204
+    },
+    {
+      "lfs_sha256": "ac18538965420af4df53c6509c796bfb8017814bef0e288507362c905c8e80c3",
+      "path": "data/train/gt/chicago1.tif",
+      "size_bytes": 850412
+    },
+    {
+      "lfs_sha256": "9a4aa56f3cdac1a14fa24d65c8b7c302041b159e50d6c2fe6297e594cf623f75",
+      "path": "data/train/gt/chicago10.tif",
+      "size_bytes": 913440
+    },
+    {
+      "lfs_sha256": "32ca91f38a36289865ba8b57d974a7b301b2300a5f17fec343e3fb885a9dda55",
+      "path": "data/train/gt/chicago11.tif",
+      "size_bytes": 940875
+    },
+    {
+      "lfs_sha256": "f71fc69e547d07d53c0171ee72acb79927c921285fe29e4896667ae9feb9b63d",
+      "path": "data/train/gt/chicago12.tif",
+      "size_bytes": 983795
+    },
+    {
+      "lfs_sha256": "95cabdaa58dd98345023f066415bea9d0340b84c3958980accd40a89feade6d0",
+      "path": "data/train/gt/chicago13.tif",
+      "size_bytes": 912605
+    },
+    {
+      "lfs_sha256": "b884f35ddebcb83307a800328a71123cc06ba514b0196df9b7ab4dbe76b4a0a8",
+      "path": "data/train/gt/chicago14.tif",
+      "size_bytes": 928334
+    },
+    {
+      "lfs_sha256": "ba3713dde34d304435352ab2e71531fc2d2d191d90e80c8a6df46edc6bf7f84e",
+      "path": "data/train/gt/chicago15.tif",
+      "size_bytes": 976714
+    },
+    {
+      "lfs_sha256": "efbba7bd9b7b14c3309173d2a631707fa35f1a0a04bfeaa7b58c0748d4b0bd58",
+      "path": "data/train/gt/chicago16.tif",
+      "size_bytes": 909872
+    },
+    {
+      "lfs_sha256": "00f766197279d5d7e1f20ec3cc4fd86c45e3b5d938716f069773485246023e60",
+      "path": "data/train/gt/chicago17.tif",
+      "size_bytes": 925404
+    },
+    {
+      "lfs_sha256": "f3672b3ab09b048b5b5bb5bbfd65e4f16b17e8d2a909f80cff4d12adc497e53e",
+      "path": "data/train/gt/chicago18.tif",
+      "size_bytes": 1217587
+    },
+    {
+      "lfs_sha256": "c0b083567b98a47a6deda9d1a55c5dd173086e19588f887ec28a0d1b0a5e3eb5",
+      "path": "data/train/gt/chicago19.tif",
+      "size_bytes": 1005515
+    },
+    {
+      "lfs_sha256": "8f5844223ddd2e2a295bb890b78af5a5c57595136d54b6a3d481df5845c2fa34",
+      "path": "data/train/gt/chicago2.tif",
+      "size_bytes": 1092787
+    },
+    {
+      "lfs_sha256": "c39caff0e69d492b5aa0654dbcfe10ddfae779ba965f334534259fcd63cda5fb",
+      "path": "data/train/gt/chicago20.tif",
+      "size_bytes": 907478
+    },
+    {
+      "lfs_sha256": "599ca382f73abe43288275b1066d8205de36b6f1b401f195f6ef1461d763de1d",
+      "path": "data/train/gt/chicago21.tif",
+      "size_bytes": 997575
+    },
+    {
+      "lfs_sha256": "7748202f10ab5195f9f223d24717b952c7504f0a4031c3559067f4cad37c8113",
+      "path": "data/train/gt/chicago22.tif",
+      "size_bytes": 894094
+    },
+    {
+      "lfs_sha256": "cf66ad0ff3d153a173842425dfd4bbaaf8dc21ac25709da6d6718cdbf0fbc8cd",
+      "path": "data/train/gt/chicago23.tif",
+      "size_bytes": 935825
+    },
+    {
+      "lfs_sha256": "eec95b469fb1997bd62f71fe4ea264ac472022130cb79f97fb51b6008b8d36c7",
+      "path": "data/train/gt/chicago24.tif",
+      "size_bytes": 1139797
+    },
+    {
+      "lfs_sha256": "97766d18e1b80aa8c59b072ddbdfeeb101d20b3907eb5d477fbc051027c0f026",
+      "path": "data/train/gt/chicago25.tif",
+      "size_bytes": 1079492
+    },
+    {
+      "lfs_sha256": "3d2066033ca96c5944d07ae340236aaeb0d754e651ec964920fd769237224ee7",
+      "path": "data/train/gt/chicago26.tif",
+      "size_bytes": 1023285
+    },
+    {
+      "lfs_sha256": "5d4774bb2fd8fb88b15530de94aabb25a98aaeaeeb8f076983edf99944504a50",
+      "path": "data/train/gt/chicago27.tif",
+      "size_bytes": 943933
+    },
+    {
+      "lfs_sha256": "3e39aa9df43488c71fb3d5da78d02bf7cf07baf0293da10b5dce14d545c0abb0",
+      "path": "data/train/gt/chicago28.tif",
+      "size_bytes": 904451
+    },
+    {
+      "lfs_sha256": "002fa32d4f726a54a475a8a103d8deaba26b0f1130ce3ff403b45c93f38baa63",
+      "path": "data/train/gt/chicago29.tif",
+      "size_bytes": 919268
+    },
+    {
+      "lfs_sha256": "93ad3d31bb57c280e97ecb2ede9669a99fc581fa9c029ba14f6597a413d85ab2",
+      "path": "data/train/gt/chicago3.tif",
+      "size_bytes": 974638
+    },
+    {
+      "lfs_sha256": "d4b100d9b98390985d97b96859089c6b409bc52ef6ea7dcdfc765bcbbe90b47b",
+      "path": "data/train/gt/chicago30.tif",
+      "size_bytes": 893437
+    },
+    {
+      "lfs_sha256": "015b003abd8c4ebb5c3528e82d8a8be3eae090a4e0821d990ad4041e66e1b413",
+      "path": "data/train/gt/chicago31.tif",
+      "size_bytes": 875650
+    },
+    {
+      "lfs_sha256": "f9aaa88982e33c7e32dfb7d947bf825ba906c8d5795e10ba4f10278c0702e291",
+      "path": "data/train/gt/chicago32.tif",
+      "size_bytes": 921284
+    },
+    {
+      "lfs_sha256": "ca54ff9ee557907f384799d92d7387c57f8b6e8b56f70b6e06f9421256175361",
+      "path": "data/train/gt/chicago33.tif",
+      "size_bytes": 898677
+    },
+    {
+      "lfs_sha256": "8672c9077ee8163baf8bb9e8c7f48ac0ebc1e291f3f80ec983249d9f312b9b09",
+      "path": "data/train/gt/chicago34.tif",
+      "size_bytes": 893250
+    },
+    {
+      "lfs_sha256": "3dfad38328ae344611c2e8e5021bdf980d7ec2c2c5989a9832fbf9878b2b61e4",
+      "path": "data/train/gt/chicago35.tif",
+      "size_bytes": 912033
+    },
+    {
+      "lfs_sha256": "8ace7bc8b9363ec98368750b0e8828b3c84bcda288e043694faf98278c969906",
+      "path": "data/train/gt/chicago36.tif",
+      "size_bytes": 945151
+    },
+    {
+      "lfs_sha256": "dd25b748cc9d94c76474c8b742305d6c4a59cc88da172c765bba25ba44eacba9",
+      "path": "data/train/gt/chicago4.tif",
+      "size_bytes": 981726
+    },
+    {
+      "lfs_sha256": "ced2af7908330077ee12a4642b8f2ace51f1e870c39051c36c666f85cb0e40df",
+      "path": "data/train/gt/chicago5.tif",
+      "size_bytes": 905398
+    },
+    {
+      "lfs_sha256": "2f95f5d9d5cd47fbd5f63e29be21f5eae2bf675300e20f180e8376c873eb4f3c",
+      "path": "data/train/gt/chicago6.tif",
+      "size_bytes": 1025257
+    },
+    {
+      "lfs_sha256": "9816b71dc52ca6b632123da9a68853affb2120dce707b76c1b4324f1be67b88c",
+      "path": "data/train/gt/chicago7.tif",
+      "size_bytes": 876406
+    },
+    {
+      "lfs_sha256": "df63fe3bcd9ad7ed31d7c76b16824671430c55e285484054a5fd675298afb991",
+      "path": "data/train/gt/chicago8.tif",
+      "size_bytes": 1035378
+    },
+    {
+      "lfs_sha256": "a4179c426835d3439b7659ec68ef84e33ead27f530340af770e14fb279e3574c",
+      "path": "data/train/gt/chicago9.tif",
+      "size_bytes": 920884
+    },
+    {
+      "lfs_sha256": "dc42880b353ff3d225a974585ee968b352b3ef15d5e47ab721ba62cb22742668",
+      "path": "data/train/gt/kitsap1.tif",
+      "size_bytes": 627987
+    },
+    {
+      "lfs_sha256": "c7ebaebc35fadcd0e3bb23f99f66b663876fd60566f3112f48df79163eda8cca",
+      "path": "data/train/gt/kitsap10.tif",
+      "size_bytes": 686616
+    },
+    {
+      "lfs_sha256": "9d200eab99cd5bffc3553dcade0612606cd81e28e68ff0f986af6b43a766cc3e",
+      "path": "data/train/gt/kitsap11.tif",
+      "size_bytes": 811934
+    },
+    {
+      "lfs_sha256": "f40eea370ba170ca02d9e41f47706e090d306f679ca68a01c1f2202cd5ac5dca",
+      "path": "data/train/gt/kitsap12.tif",
+      "size_bytes": 783171
+    },
+    {
+      "lfs_sha256": "edff782587e06c160e99ed59f79eb02fd4d1c3ce1b0f1008a2ab381864dcd422",
+      "path": "data/train/gt/kitsap13.tif",
+      "size_bytes": 701968
+    },
+    {
+      "lfs_sha256": "865b105e92ad121d431d18d64243e46d7df58736c6f9915a5f56465545485615",
+      "path": "data/train/gt/kitsap14.tif",
+      "size_bytes": 719854
+    },
+    {
+      "lfs_sha256": "807c50ebd3846b2658bd2b24c8453355bb398c21ea527d2c9eac005bc2e1b3fe",
+      "path": "data/train/gt/kitsap15.tif",
+      "size_bytes": 704302
+    },
+    {
+      "lfs_sha256": "9b78f29092998a1bf5fee278373d320f5f6ff05a22429268bd4da822fccd75cf",
+      "path": "data/train/gt/kitsap16.tif",
+      "size_bytes": 710037
+    },
+    {
+      "lfs_sha256": "fc964dab682b9ff44bcfaf0e219eab9fe3243970de58f300529b4bfa2a1bec08",
+      "path": "data/train/gt/kitsap17.tif",
+      "size_bytes": 769684
+    },
+    {
+      "lfs_sha256": "d8998a80bdcc8372ecadd33962582d60e5327ffb85a23d2c9bef484c99dda25d",
+      "path": "data/train/gt/kitsap18.tif",
+      "size_bytes": 864498
+    },
+    {
+      "lfs_sha256": "6a257bb9f1a5b460dffad4c0ccc3c03b582745ff6701b67a7ca9902bee908476",
+      "path": "data/train/gt/kitsap19.tif",
+      "size_bytes": 914621
+    },
+    {
+      "lfs_sha256": "c9a986e94b497517f24cdfcd0ab34a715c32562be74c84ab784297c4ce81c22d",
+      "path": "data/train/gt/kitsap2.tif",
+      "size_bytes": 655105
+    },
+    {
+      "lfs_sha256": "4a6a2cc353673e1927647474eab861b83fe89dced6da711ba624ca2580b40126",
+      "path": "data/train/gt/kitsap20.tif",
+      "size_bytes": 705037
+    },
+    {
+      "lfs_sha256": "69d6147556053c1c5a4320dc4741ababcc99d338d4a94eb75594070a196de593",
+      "path": "data/train/gt/kitsap21.tif",
+      "size_bytes": 674103
+    },
+    {
+      "lfs_sha256": "fc637d4708b1d6b4bd9c5111815ad91cf982bec0b298135287a3d3ef45953fde",
+      "path": "data/train/gt/kitsap22.tif",
+      "size_bytes": 717616
+    },
+    {
+      "lfs_sha256": "21ab6a8dc2f703f354e5582a6be2709bc426f6293e914cfb5f058cb0dcb9ea5d",
+      "path": "data/train/gt/kitsap23.tif",
+      "size_bytes": 733878
+    },
+    {
+      "lfs_sha256": "03ad052d83efba3a1d96a523548f5d8dacef0762d04dff944328fdf198a1a093",
+      "path": "data/train/gt/kitsap24.tif",
+      "size_bytes": 811190
+    },
+    {
+      "lfs_sha256": "5af4821920ab18433220c4bb9fefda5713a18495c8dace01938452078b4432e1",
+      "path": "data/train/gt/kitsap25.tif",
+      "size_bytes": 807051
+    },
+    {
+      "lfs_sha256": "d52ec62cf38eb2dccf5e27e7eac30ecefd894c7615550a60caa17414555d5885",
+      "path": "data/train/gt/kitsap26.tif",
+      "size_bytes": 947035
+    },
+    {
+      "lfs_sha256": "37592608212de411b79ca79d379e4b3a8c2c3e7a9cc0fe6d2273481b7dc6f1b6",
+      "path": "data/train/gt/kitsap27.tif",
+      "size_bytes": 716642
+    },
+    {
+      "lfs_sha256": "3ae502b6d92417cf0df00339d2dd6eba4065bc514c48354ab8d6afce04d01a62",
+      "path": "data/train/gt/kitsap28.tif",
+      "size_bytes": 728372
+    },
+    {
+      "lfs_sha256": "e2fe59cc21ea4cfca21bf783eb205b96e5b9a916ac1878c49b34ed77f4e3bc9a",
+      "path": "data/train/gt/kitsap29.tif",
+      "size_bytes": 757830
+    },
+    {
+      "lfs_sha256": "0de110e81173af53b66f10fa604fceb23420796bbe7529767b60a7fb2ac3f79a",
+      "path": "data/train/gt/kitsap3.tif",
+      "size_bytes": 785553
+    },
+    {
+      "lfs_sha256": "b0567b437aeaffcafe539b6afee7fcf2a2ae567e9b30bee83da2bdfbd0831b43",
+      "path": "data/train/gt/kitsap30.tif",
+      "size_bytes": 838185
+    },
+    {
+      "lfs_sha256": "f41fd9298a933984eba9a686a14134a497e2275fb82498586e1bfbfe48216ada",
+      "path": "data/train/gt/kitsap31.tif",
+      "size_bytes": 857922
+    },
+    {
+      "lfs_sha256": "6df026671671568452476589364e99405d8941021fe5bf3f5792163ccc1af56a",
+      "path": "data/train/gt/kitsap32.tif",
+      "size_bytes": 727920
+    },
+    {
+      "lfs_sha256": "a4358b995f76d41895711165c4cd60f9ffd57b037bdb3ac79732d5c33217c287",
+      "path": "data/train/gt/kitsap33.tif",
+      "size_bytes": 721923
+    },
+    {
+      "lfs_sha256": "617e7c583160afff3948c68fc57c9ef5eeea361fe24c4a460def6a33e57f0ac0",
+      "path": "data/train/gt/kitsap34.tif",
+      "size_bytes": 727521
+    },
+    {
+      "lfs_sha256": "5f3a96b1bb94c1bffd0363778613c55e55e61e6522e3070bf732aff73364f441",
+      "path": "data/train/gt/kitsap35.tif",
+      "size_bytes": 724267
+    },
+    {
+      "lfs_sha256": "ab2d2927197b3f290809c2d8255580bc70cb6fd98b226aefd60327e8f95fb730",
+      "path": "data/train/gt/kitsap36.tif",
+      "size_bytes": 832285
+    },
+    {
+      "lfs_sha256": "a43c18dc822c8dcf20f1216734db1eb08f87db14484104240b3ead8d9bbfb05b",
+      "path": "data/train/gt/kitsap4.tif",
+      "size_bytes": 687106
+    },
+    {
+      "lfs_sha256": "9717e86af1e096aac90b957e2ac9d547c35f335eb2d7ebf8509d2eb228548b26",
+      "path": "data/train/gt/kitsap5.tif",
+      "size_bytes": 665577
+    },
+    {
+      "lfs_sha256": "326910812695ba89f703d0ffc550ead1372f04655ccfa7912b12c8a85c44d1f4",
+      "path": "data/train/gt/kitsap6.tif",
+      "size_bytes": 693954
+    },
+    {
+      "lfs_sha256": "99e44246ee829f8f2897cadcc862366375e674e740086900eb686a3d3eb1d825",
+      "path": "data/train/gt/kitsap7.tif",
+      "size_bytes": 667236
+    },
+    {
+      "lfs_sha256": "94ced1e3d1d6a0fb3727166a7e044c1244f2a2c5e242ffcfb27730ce0baebf3d",
+      "path": "data/train/gt/kitsap8.tif",
+      "size_bytes": 688264
+    },
+    {
+      "lfs_sha256": "becaf813dcc0327a6dba49f479cbf7d65466132fbb6e826cb0b840ea14b61462",
+      "path": "data/train/gt/kitsap9.tif",
+      "size_bytes": 728782
+    },
+    {
+      "lfs_sha256": "7bdb9a686d919adc5530fd76202f2d11978847573817d14cc3185117e7a322af",
+      "path": "data/train/gt/tyrol-w1.tif",
+      "size_bytes": 809438
+    },
+    {
+      "lfs_sha256": "6dad0dbf39a424e38294adccdfbe1ac27d1cb07fcfb98cfd897e10ef04691182",
+      "path": "data/train/gt/tyrol-w10.tif",
+      "size_bytes": 667771
+    },
+    {
+      "lfs_sha256": "8792a8004394f13e0f0ff2e8e3ff0b7b1ffad5cc5f36450289161c68695a3da5",
+      "path": "data/train/gt/tyrol-w11.tif",
+      "size_bytes": 724337
+    },
+    {
+      "lfs_sha256": "b0fd9744652e7dccc1504b8e0dbb89e53b1b28ba0a0d85556a8b803e31ea60cd",
+      "path": "data/train/gt/tyrol-w12.tif",
+      "size_bytes": 725297
+    },
+    {
+      "lfs_sha256": "dcddc7bd2e1d04023e9e9995596446d48289a037ce7ba7662e9ee2e77534f0cd",
+      "path": "data/train/gt/tyrol-w13.tif",
+      "size_bytes": 691973
+    },
+    {
+      "lfs_sha256": "228dc952940ecc1a478179cb3ad9ca7bfd072bd517ab950ef0619688e2b7988c",
+      "path": "data/train/gt/tyrol-w14.tif",
+      "size_bytes": 795331
+    },
+    {
+      "lfs_sha256": "59eabc4364fa5d9c8db54baed806523cf80ae5db4d3e29db867e713ae7529880",
+      "path": "data/train/gt/tyrol-w15.tif",
+      "size_bytes": 762046
+    },
+    {
+      "lfs_sha256": "aaf2f45a3c2d57b11dcc2add79b017f604951d011b5b51e7da353abaff178564",
+      "path": "data/train/gt/tyrol-w16.tif",
+      "size_bytes": 700205
+    },
+    {
+      "lfs_sha256": "f878e9a8c40236924475fc56f0f9b22c39da34f313ebcda25cd1214a064f520a",
+      "path": "data/train/gt/tyrol-w17.tif",
+      "size_bytes": 759214
+    },
+    {
+      "lfs_sha256": "fcb8081eb6d986f93e2556d945a641599ff4371ae694ee4abffe212a660b699e",
+      "path": "data/train/gt/tyrol-w18.tif",
+      "size_bytes": 838303
+    },
+    {
+      "lfs_sha256": "860b4897547c199eef81226775fa4be2f7c8de13aa9a75b662cb8c2f4117e11b",
+      "path": "data/train/gt/tyrol-w19.tif",
+      "size_bytes": 703524
+    },
+    {
+      "lfs_sha256": "4fb4eb3c8447e1e624a569830106ae3dbfe091af2d9ac946938bda753c5dac1a",
+      "path": "data/train/gt/tyrol-w2.tif",
+      "size_bytes": 763079
+    },
+    {
+      "lfs_sha256": "927ec2facab733c16d20a3fcb4d5f5f388b82cb52b951c10f8c428f650f157a7",
+      "path": "data/train/gt/tyrol-w20.tif",
+      "size_bytes": 646843
+    },
+    {
+      "lfs_sha256": "d81539bc3514a12aa464c826d6810c76f195d91c26ae960bd2debe4c6dd1328a",
+      "path": "data/train/gt/tyrol-w21.tif",
+      "size_bytes": 968534
+    },
+    {
+      "lfs_sha256": "8b3cda14fa31c0126276463a8c137cbd78b570199cf3cf0cce12fd62b7bce19a",
+      "path": "data/train/gt/tyrol-w22.tif",
+      "size_bytes": 800492
+    },
+    {
+      "lfs_sha256": "410a5cc45eabec00456d96771a5330600bade61152ba3d65bf864c47f3284c69",
+      "path": "data/train/gt/tyrol-w23.tif",
+      "size_bytes": 771290
+    },
+    {
+      "lfs_sha256": "3128403fea34a40d096d1ad4107b11ffe7cf745c4e3886c5ee2bd22497b5854f",
+      "path": "data/train/gt/tyrol-w24.tif",
+      "size_bytes": 822323
+    },
+    {
+      "lfs_sha256": "884af0807a8abaf1d91953c97052f99be9464be4ba6d022a8cad65dc7ceb76b9",
+      "path": "data/train/gt/tyrol-w25.tif",
+      "size_bytes": 739955
+    },
+    {
+      "lfs_sha256": "985f84ea005b6c6a0972ac2ea71e7e990232cbe31e58fc50049f2225b19bf579",
+      "path": "data/train/gt/tyrol-w26.tif",
+      "size_bytes": 729353
+    },
+    {
+      "lfs_sha256": "a60dfbb07be39e9fd351f512d40780dfb96e2e0b210956224b931efb4d332382",
+      "path": "data/train/gt/tyrol-w27.tif",
+      "size_bytes": 714629
+    },
+    {
+      "lfs_sha256": "4ee10a05a2b8c18e7d6def799b1c68a79d82ac732c298ab54c5beffb345227a7",
+      "path": "data/train/gt/tyrol-w28.tif",
+      "size_bytes": 775074
+    },
+    {
+      "lfs_sha256": "4163f33e0beadcb2ff120cf99ce35f06fcb14afec3aac9c931dd73dafbc4c57e",
+      "path": "data/train/gt/tyrol-w29.tif",
+      "size_bytes": 942427
+    },
+    {
+      "lfs_sha256": "60a1a81d01d9e7104030dad6a3e2c1aa9b24df88854ac2dd7aeff47479e2edcf",
+      "path": "data/train/gt/tyrol-w3.tif",
+      "size_bytes": 868343
+    },
+    {
+      "lfs_sha256": "1060d828d0bca985640b52e846e7cc8a4eb44f7df625b008fd8cd0584a202d61",
+      "path": "data/train/gt/tyrol-w30.tif",
+      "size_bytes": 818095
+    },
+    {
+      "lfs_sha256": "b03b31364b51ba6563c656090c28e267ddb625455a8344e64dbcd62ac97ab680",
+      "path": "data/train/gt/tyrol-w31.tif",
+      "size_bytes": 805585
+    },
+    {
+      "lfs_sha256": "0ef9a107934ed81af5681a3753138c4f91d984a31d3fbb65badb431b4238ee6b",
+      "path": "data/train/gt/tyrol-w32.tif",
+      "size_bytes": 749346
+    },
+    {
+      "lfs_sha256": "cf6e5df5122434a54a7b122a3ba1e71fe4b9bdcb9cea78031905d87cf9cf82d1",
+      "path": "data/train/gt/tyrol-w33.tif",
+      "size_bytes": 695106
+    },
+    {
+      "lfs_sha256": "791d4139d8aa21157d6ac871dfc82007d0516d906ad28936f5adfaef313884dd",
+      "path": "data/train/gt/tyrol-w34.tif",
+      "size_bytes": 668932
+    },
+    {
+      "lfs_sha256": "36fc50987673a0862d2a66216ef210110fe8c1a3550c54aa89c78ec1a56d5d63",
+      "path": "data/train/gt/tyrol-w35.tif",
+      "size_bytes": 727022
+    },
+    {
+      "lfs_sha256": "7c9ba0de09d2a0e37cb80605813d07bade7e41d403374b6f8419116e102adca3",
+      "path": "data/train/gt/tyrol-w36.tif",
+      "size_bytes": 733965
+    },
+    {
+      "lfs_sha256": "398742e37c453a1dffcc56008e17d8c66c8b473884f3df34191383aa45c3c04f",
+      "path": "data/train/gt/tyrol-w4.tif",
+      "size_bytes": 807557
+    },
+    {
+      "lfs_sha256": "488f4746861aea608e9a3a00a98138319b11f40b052456e7dc5d39da146a242a",
+      "path": "data/train/gt/tyrol-w5.tif",
+      "size_bytes": 713512
+    },
+    {
+      "lfs_sha256": "2cedfb7bf72e008b1c371d1d6efc69e6d991ecd2e21917aae1b7584e8bc49d07",
+      "path": "data/train/gt/tyrol-w6.tif",
+      "size_bytes": 764392
+    },
+    {
+      "lfs_sha256": "cfa4c117492325adec21fbddf24a21b2f2f1c9f629d0de66b787208a52515001",
+      "path": "data/train/gt/tyrol-w7.tif",
+      "size_bytes": 756483
+    },
+    {
+      "lfs_sha256": "166f06dd92ebf67ff77d74083db2b8f0a73c9cbbee9a919681d54ed41905a442",
+      "path": "data/train/gt/tyrol-w8.tif",
+      "size_bytes": 747323
+    },
+    {
+      "lfs_sha256": "fda7ef85471fbd9058699296871c08e11dc3d17252972dc53817aca194b76ac9",
+      "path": "data/train/gt/tyrol-w9.tif",
+      "size_bytes": 687417
+    },
+    {
+      "lfs_sha256": "a32805462c3d76f6dedca8d0cfcf7163a11f0c53d8e869c259770a84fda6ba10",
+      "path": "data/train/gt/vienna1.tif",
+      "size_bytes": 1007677
+    },
+    {
+      "lfs_sha256": "423e23aa55e692213df4a5dcd725314c4359a569cd96d37cb7567c11952ae115",
+      "path": "data/train/gt/vienna10.tif",
+      "size_bytes": 1068581
+    },
+    {
+      "lfs_sha256": "75abac80a02f016aca957ed085660cab28982509c1b11e436b9a8168be99cc9e",
+      "path": "data/train/gt/vienna11.tif",
+      "size_bytes": 1020375
+    },
+    {
+      "lfs_sha256": "370ad79de13f5f039a62c5c4ef39893e1d0739230485b29172e38ab1977e722a",
+      "path": "data/train/gt/vienna12.tif",
+      "size_bytes": 885404
+    },
+    {
+      "lfs_sha256": "af14acdedf1c320af02e2198730615bed74c61d856d15e21a59f295dcdc38add",
+      "path": "data/train/gt/vienna13.tif",
+      "size_bytes": 1031773
+    },
+    {
+      "lfs_sha256": "e36fca28b92dce08cff3794a5ea3c33299c80a746fdb17f859bf06a28e13898b",
+      "path": "data/train/gt/vienna14.tif",
+      "size_bytes": 1127636
+    },
+    {
+      "lfs_sha256": "0eb6e529612274b73be225a584cdbe45d09595e95f9e0a26edbb3f7d24dda6dd",
+      "path": "data/train/gt/vienna15.tif",
+      "size_bytes": 1121377
+    },
+    {
+      "lfs_sha256": "8354a51be2d148d992b42f8d7a4374130babd0f7f1cd7a613a96ca278eb1582d",
+      "path": "data/train/gt/vienna16.tif",
+      "size_bytes": 1062792
+    },
+    {
+      "lfs_sha256": "3ccb9fddb70c6e9dfaedc02908ba5b2f89ca2fe1e5c6ca6f11a7aa388e9510eb",
+      "path": "data/train/gt/vienna17.tif",
+      "size_bytes": 1078634
+    },
+    {
+      "lfs_sha256": "56f018509fea108e10946021ceccfba4c7378e004b5fc862778a8f5b57b0df73",
+      "path": "data/train/gt/vienna18.tif",
+      "size_bytes": 779163
+    },
+    {
+      "lfs_sha256": "77bd84773f8fbbb4bc73f62ca0a6a9f5e64df9e90b50958a5c5273ec6e3fba2f",
+      "path": "data/train/gt/vienna19.tif",
+      "size_bytes": 973169
+    },
+    {
+      "lfs_sha256": "d95147a2856c60c3c2cb3ef77ba7e99c90c98d7d85b5cde5be07c3e2edec3ea5",
+      "path": "data/train/gt/vienna2.tif",
+      "size_bytes": 1023620
+    },
+    {
+      "lfs_sha256": "03068c448321251bf76cce38b97aff3c4b6ddb3cf74f70e7de360020f2a026bd",
+      "path": "data/train/gt/vienna20.tif",
+      "size_bytes": 1096710
+    },
+    {
+      "lfs_sha256": "5f3a4675a610cce96c180bdf65fdc1e94fec7f8c6016a4677e48e17379366db3",
+      "path": "data/train/gt/vienna21.tif",
+      "size_bytes": 1164508
+    },
+    {
+      "lfs_sha256": "090bb4c62c009056fae627b320f92c9859aa49f0bfd8d68c58f609f959541831",
+      "path": "data/train/gt/vienna22.tif",
+      "size_bytes": 1064083
+    },
+    {
+      "lfs_sha256": "84e5d0ee701c65e9fac0ee16e527099da6440213fd752eb5245e0aac9a0b01b3",
+      "path": "data/train/gt/vienna23.tif",
+      "size_bytes": 999688
+    },
+    {
+      "lfs_sha256": "5a190cba509303739887bb5965ce8a826e61e0c132ade16ab664d04d26fd39af",
+      "path": "data/train/gt/vienna24.tif",
+      "size_bytes": 942244
+    },
+    {
+      "lfs_sha256": "1e33ce8f5d981c63ff366a38056191987c713a02ba257dd9c002a6512f0167f2",
+      "path": "data/train/gt/vienna25.tif",
+      "size_bytes": 854770
+    },
+    {
+      "lfs_sha256": "5eb4ce5c63dfabec7b1f5b458f5fd2991da88bd21e676c62ae221d8c3eadafcf",
+      "path": "data/train/gt/vienna26.tif",
+      "size_bytes": 1023453
+    },
+    {
+      "lfs_sha256": "b585e1ae74bff34d8929bbaa03610231cab381c7c6f958665da3bb26bcc7bc75",
+      "path": "data/train/gt/vienna27.tif",
+      "size_bytes": 991628
+    },
+    {
+      "lfs_sha256": "bedcbee01804e6d391c2688076f85c7570bab62006fd77fd3b79742d6eea5b6a",
+      "path": "data/train/gt/vienna28.tif",
+      "size_bytes": 1046745
+    },
+    {
+      "lfs_sha256": "c0d5ac0b0f212d0520dd5e4a6525591b8babb0c116dbbfb747500c11fb7c9640",
+      "path": "data/train/gt/vienna29.tif",
+      "size_bytes": 932080
+    },
+    {
+      "lfs_sha256": "88efac867deadfe7929e4baae751e544deb7c10370134947289f234f055bbbd3",
+      "path": "data/train/gt/vienna3.tif",
+      "size_bytes": 1049028
+    },
+    {
+      "lfs_sha256": "bcd053104fd186295043561a1c715899b09973a8ffb7dd3ecf3029dab2663a12",
+      "path": "data/train/gt/vienna30.tif",
+      "size_bytes": 1008781
+    },
+    {
+      "lfs_sha256": "10a0bde08188bb75dce830b3393156463955cb1313356d8d09d1bf3ddbdd9704",
+      "path": "data/train/gt/vienna31.tif",
+      "size_bytes": 1022472
+    },
+    {
+      "lfs_sha256": "d92c22781942e7e5f3faa93fa2f2149b39feea42363373006208b7ee0cb2da71",
+      "path": "data/train/gt/vienna32.tif",
+      "size_bytes": 960571
+    },
+    {
+      "lfs_sha256": "145158f6924e1563a3f20060e84e143ff42e3d26ecf66d5e3c6cbf8a0a920a30",
+      "path": "data/train/gt/vienna33.tif",
+      "size_bytes": 857001
+    },
+    {
+      "lfs_sha256": "129628c05dce8c49948d07ab7bd9349e68c845046002f4803209eee9319b8c74",
+      "path": "data/train/gt/vienna34.tif",
+      "size_bytes": 958978
+    },
+    {
+      "lfs_sha256": "251a3cf479387717b7b48fc6e4e5eb2a292a56f5303279dab1c5419e414319f3",
+      "path": "data/train/gt/vienna35.tif",
+      "size_bytes": 896318
+    },
+    {
+      "lfs_sha256": "4262fc673c9669399d8cf817b997fb01556e074078463b7f9128d26c004eb199",
+      "path": "data/train/gt/vienna36.tif",
+      "size_bytes": 936882
+    },
+    {
+      "lfs_sha256": "7580787fb801cdc00945f20b03ca92252d3087eab4ab5dccb530789d9605d924",
+      "path": "data/train/gt/vienna4.tif",
+      "size_bytes": 1007758
+    },
+    {
+      "lfs_sha256": "a60ac89c03b63e05c4ec4fd43fe5928ac0657b604392668ba4f205147000945e",
+      "path": "data/train/gt/vienna5.tif",
+      "size_bytes": 924745
+    },
+    {
+      "lfs_sha256": "d78fcc9384fac39767875b746b73f657faba66f7bb7b7f99ceca1cad0dfed7a5",
+      "path": "data/train/gt/vienna6.tif",
+      "size_bytes": 821975
+    },
+    {
+      "lfs_sha256": "5cc16086df4e2f94379be3089c8af896bff61418479754383d2992f4ac9a1402",
+      "path": "data/train/gt/vienna7.tif",
+      "size_bytes": 1068818
+    },
+    {
+      "lfs_sha256": "ebbb2852d9046f74bcbaed5680c676551ff3bde2ae42a7fb6694c496ecd202df",
+      "path": "data/train/gt/vienna8.tif",
+      "size_bytes": 1127182
+    },
+    {
+      "lfs_sha256": "a29cbf8684cea23153a00f4846a93dd4ba1c83b12662bf132882b115acf23873",
+      "path": "data/train/gt/vienna9.tif",
+      "size_bytes": 1078619
+    },
+    {
+      "lfs_sha256": "8b68c9e2fe3438b511e482998f34f772a870b99020eb5e7fc1b83b08b4828e31",
+      "path": "data/train/images/austin1.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "0d09a095fae887fa881bea387912112d868f52a1006c18de74b3e1c324a3cea2",
+      "path": "data/train/images/austin10.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "e770bf411e0cc791516bb624628f8feda295b0675886d3c4eb0de0f0dbda0db2",
+      "path": "data/train/images/austin11.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "0234ee92af8b804122cd331c080df04cf4c16be6bc5898a1adc84121ece40b35",
+      "path": "data/train/images/austin12.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "0b3f53fc85ef7db8f65ad72b2b0cce9006e4146336a168ecf0758496717e82fe",
+      "path": "data/train/images/austin13.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "48a5a2b71d412042fbd60e8fa228f0f1bc43ff3ee58a2f4a5757fb1266bd3252",
+      "path": "data/train/images/austin14.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "bffa397651478963136ba2143e75d9355bfd82628f2dcd000efa1746a5b70547",
+      "path": "data/train/images/austin15.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "fd87fac74ad1bebc6662c028f30f0e9dddf38af7ea656ab7f9ad7b6894beaf9a",
+      "path": "data/train/images/austin16.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "de092a723f00d25cc2c76daaf33b1507f13f0e435139ef49f3a0e05663d2e4a3",
+      "path": "data/train/images/austin17.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "eef9c4a9bfa1f7c8238be6f6e555551c5b8b1ad4998bdcdfae8a090facb8c63c",
+      "path": "data/train/images/austin18.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "f7da73fd9b015488a94124e8d35fed8e97bf5b63ff0fbff8922dfa8d842e32ec",
+      "path": "data/train/images/austin19.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "c59923959e8c399d9a63472c8ca13408ff2803a3395713dacae99005e1e0fdb9",
+      "path": "data/train/images/austin2.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "b9d8bc82848b5bc24e2282c1b2712e4fc6e86fda8bb59541a1ebfeca2f56ef69",
+      "path": "data/train/images/austin20.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "3643c427dd95769b4ac8579826dc468e2428c37132ca4c10bbcc4ba7e75cd20d",
+      "path": "data/train/images/austin21.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "5742e5295b4dd12583d322c17c6e70b32b4df2f3e5a90599f6ccc0d33154652f",
+      "path": "data/train/images/austin22.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "dd274eddbc0507ad40fc955f05af18ca100f6068148645d61bb0ec40c49384a6",
+      "path": "data/train/images/austin23.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "3e92d6ea95a845d84c393a72badcea738faad88ac8b45c371b506be67ec5d6e8",
+      "path": "data/train/images/austin24.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "c7d1e0e94822bad33226f80494573b4583cbd8e5674775fdde2f7ab6320f078c",
+      "path": "data/train/images/austin25.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "29d4a5af7ac6044f868fca715dccab412d14f1ddff3da88d70677882a5572992",
+      "path": "data/train/images/austin26.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "2fc97264edad38b2d45e5b730edbbef98b953463ae974a4fd4d127fbe5ca8c5f",
+      "path": "data/train/images/austin27.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "93d40255679828779af650e32258b01076bca4ef3930b80d75539e4b8b0ba31d",
+      "path": "data/train/images/austin28.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "658233395f77ffb5acce2027945e86f613015cac8cc9e0b4f91e3edb2aade733",
+      "path": "data/train/images/austin29.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "c8258cbedb2de3e9c1f941dac56a05c9cc4cc19b13f8cdf1434a29bff1e0df24",
+      "path": "data/train/images/austin3.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "5e8d0e83058f42dbb18a2fedca9e59230e10339e37ec4f7109347cc120462583",
+      "path": "data/train/images/austin30.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "35ac8b48e391c415f02e2f2d7aa844bb8c766c3bd3e3af53aab1da9cb10c611b",
+      "path": "data/train/images/austin31.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "572662470a9ba604eb6ab30dfb32be6cac10c2b890ad67fd775779414812136c",
+      "path": "data/train/images/austin32.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "85969291fb8bc7cfc283dc2bd09b69b69b681073a7a2157b9d7846ab67ef5ef6",
+      "path": "data/train/images/austin33.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "2dadec9e2cd4dadb90abcbee7df37e561b29be00e2665e3c26a5d1bdc3926e5c",
+      "path": "data/train/images/austin34.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "0e3d83e27e556c389641a69ad23707a071abcfae120517954b5a7be8b43ec764",
+      "path": "data/train/images/austin35.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "651dc8916710a98cd597ac13db9233415bcb830329825068a496584db17cd657",
+      "path": "data/train/images/austin36.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "640617ef74a321976b71e4944366add9cff4567ada46b36ef7e24aa6a028f763",
+      "path": "data/train/images/austin4.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "ad99110e90de6aac821518710a2ee6f902a73a8183950d00314c069f97055b04",
+      "path": "data/train/images/austin5.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "d645d4768f1b7eface9e6c1f6a741177bcd2a327e0bf818f3530db02f8b6503b",
+      "path": "data/train/images/austin6.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "6fe088199352c6a74dc5280441a55c47e3a3f8edcc885e9beff293e091289cbf",
+      "path": "data/train/images/austin7.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "3f4efd100d45e7f9fe094b64c3f55d11cd6aa96157c2c524c6f3c9ec2ed1db76",
+      "path": "data/train/images/austin8.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "739266c00b9557c3cc64a70661f57cef9b66b495602b2f45756001ccb52b37fb",
+      "path": "data/train/images/austin9.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "f8b8628724ad5632b58e3c18377bbe2ba92367f4643943efe29375a95fc2baec",
+      "path": "data/train/images/chicago1.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "2e9e7547ca5a5be29e33c7cc416b8b80582563c96c48d4e09bd5eace7e0dc67d",
+      "path": "data/train/images/chicago10.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "b73e7d5726ad04430079242e7a96cc62e7ded4b9c881f51b012a79b66e7949b3",
+      "path": "data/train/images/chicago11.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "a582b21c657978d41b1a29998fa3cc1dfc54461fed8d3018912e510f4e5e1533",
+      "path": "data/train/images/chicago12.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "d0099d929cff8e60466442b9ddc8cf7b4078c6329481f1d95b9a8fe854c4c064",
+      "path": "data/train/images/chicago13.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "3042c3dba7013a10af9b2c079073c08d5d181198ac704319d88bf54e734eccc9",
+      "path": "data/train/images/chicago14.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "c80a820c466ab72f6c1e2511bae14a08347fb150cdca3ff5c663bcdac8e05f14",
+      "path": "data/train/images/chicago15.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "caa0e82804d9d234fb8b7ad9771e1a386b3faef6acb57ba8fe44a2eb9c2241c1",
+      "path": "data/train/images/chicago16.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "de5707fade69082a3e2eec975d6a6b86bc208b572203f20ba5275e68133a2dad",
+      "path": "data/train/images/chicago17.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "51ad79e8b3f678dd3bfc83b4625d65c0028220c8209544317bb374d68f7f76c0",
+      "path": "data/train/images/chicago18.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "58980e6f661bb0820a754245b57f2b1bda29bbd10099f7f5d2461cb3ec5675e0",
+      "path": "data/train/images/chicago19.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "7a850c72a6c42a4a91b073db0ae401e284f0baa621ed24f6045b5fb8f8b8b303",
+      "path": "data/train/images/chicago2.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "efc8f0226989aa8b60f74f4bccab227985c535f487a405ecd0961f29b2516b6f",
+      "path": "data/train/images/chicago20.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "f0b80b4736eac6718101b08cfdf29db9f4e4eb10b866ccb7b84cbfb7889232d1",
+      "path": "data/train/images/chicago21.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "15c95e2ce44c3822fda3bd93c8b544e304a40f01064a2b95762984ed29c0c2c4",
+      "path": "data/train/images/chicago22.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "78cae78de3030f3d97f7091e7e01450f75f988d2268afa15a44d08babb079d9d",
+      "path": "data/train/images/chicago23.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "7b65002ac827f152a8d3b7dc6e70892e9a01ccdc5c93a1b723b411cf8aaf63e3",
+      "path": "data/train/images/chicago24.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "887405410fb198c8da6853fddbeb5ffee5b23f493cb278fa453bda4c8910dc32",
+      "path": "data/train/images/chicago25.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "841659eb31ebf7fdc990f09cfdc9cdbd65885b1afdf1f94a0fb09e1425596a41",
+      "path": "data/train/images/chicago26.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "3498ce89cda1a24d40da8821256b002bcec19cee30f775469108121551fa0c03",
+      "path": "data/train/images/chicago27.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "b9c157b53c5267e31149d689ec20c69672c18faaefcd4c3d3c056aa2bc8ba636",
+      "path": "data/train/images/chicago28.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "c98dc4cd79f2099ab9df72cda7ff08e3cfbd5e1864361617dc8d5f409cb66053",
+      "path": "data/train/images/chicago29.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "f8482aeeb30aad6bdc3503c28fae09f6854b63877c2c6d8f153fbc7481215cf5",
+      "path": "data/train/images/chicago3.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "e4959c5b991bd1262ba1d4fca2677353833462c3345a3f306fbc51425908a96f",
+      "path": "data/train/images/chicago30.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "52f8580372dfc98fe0cdc9da5154478f00f1ecdbceb4f91a664e4e52bb87fb80",
+      "path": "data/train/images/chicago31.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "0520068a270d511ab5265e1f6c63656fa183825049da782a2d4f61f94993ac62",
+      "path": "data/train/images/chicago32.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "9158dd9b10a3dd1346ea253fee3cce81e0b826badfd0bd9a358e8d918283ff6f",
+      "path": "data/train/images/chicago33.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "851dfd8cfaca1a719710178551ac2ad3d02c940b9c9967e12a7f70ac7ee85b6a",
+      "path": "data/train/images/chicago34.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "58f267c03140866722b7153fc7302707373fbdfc5ad29c41b1cce391eef48cbe",
+      "path": "data/train/images/chicago35.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "2cbc291e7b30d4931da2524c229a6a52aa8f374ec12b79b7f1d0f2849224e9b2",
+      "path": "data/train/images/chicago36.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "5e1e936ed685257ccc84453aea08bbc0199eca52379a1d5ab4b2cf134c508130",
+      "path": "data/train/images/chicago4.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "45f47e745cc840a7a2898067d8018e47e2f8ba8760d57f03a202b165d67030e3",
+      "path": "data/train/images/chicago5.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "4bfe43d0aac2fe43a6e276328892ac2c793452fc4b06b422cfa6425e72108bb2",
+      "path": "data/train/images/chicago6.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "9da8d97dec8535b7e38bde491554b191c3892e2f860e06f26714c542592f0e60",
+      "path": "data/train/images/chicago7.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "dfd354fede3568a68b85e0bcd794b600ab406e218d6bd119d193062becbaf572",
+      "path": "data/train/images/chicago8.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "4aebe94f8c411e60ec033c04c5b060286b78e422c961f003a2e37329135d5a12",
+      "path": "data/train/images/chicago9.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "b4f8ce0f72c36beb7651a55fdf4f5137901c1dabf1290ec46af90bcda7eb6c06",
+      "path": "data/train/images/kitsap1.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "261494576b04d1d08b92091e9ab7cf6ef6099e5985c2caf71b64fed1b8fed64d",
+      "path": "data/train/images/kitsap10.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "0355a2618c9756c664d5403c8daa3f4eadc708f644cf2c4f708d4e25201881b6",
+      "path": "data/train/images/kitsap11.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "d835d17f1d226f60c309d5187da7dd81fcc50149de6bf0806602bb194e83d2d0",
+      "path": "data/train/images/kitsap12.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "73d96db3e516d9787b361cf7a53200872148f7f3e4babad4a17d5fa50395cae9",
+      "path": "data/train/images/kitsap13.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "6b2b9480398cefd199d4d6074096369ae2a62755251801c86cc3a3ba950d59ec",
+      "path": "data/train/images/kitsap14.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "65b185f4012fc6d6e642400f1435083274c11dc24cdd95496ca9d5c2639167ae",
+      "path": "data/train/images/kitsap15.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "2b2807ecf42e1559cf81c8f5cbd3ef9c2a52be448fd599ebed264f786912a385",
+      "path": "data/train/images/kitsap16.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "5667fa7469af0db47c6acb64e6dbe6bd2610c528cb084e57d217f8bf75f633e7",
+      "path": "data/train/images/kitsap17.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "1b064555f3d537d38acb94914118c3f5995f73cf98f13e438952c6c875b014ab",
+      "path": "data/train/images/kitsap18.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "1581dc1994714c851c1ceb00494d5f5043638649dacf3135d53f46bfdafda981",
+      "path": "data/train/images/kitsap19.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "954feb007e1beb7361642a1c993f8dc9765207e369aba5a05039225ca302854d",
+      "path": "data/train/images/kitsap2.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "215815399ed3fbf99293dd576df70df162cd94f472772b814b0cdeea93715ce9",
+      "path": "data/train/images/kitsap20.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "7ef55f5f11beed0c6796b0955183f27d27a28adc769b1322f26628a0f8b4dd39",
+      "path": "data/train/images/kitsap21.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "29812f5097bb570ff7202a7122da290175f5d1f1cdcb4b0d99e0aaecfae87b42",
+      "path": "data/train/images/kitsap22.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "73b9ac238bf4fcda2086cbbbf3b633f81e850a46744fa387011c213186a5deec",
+      "path": "data/train/images/kitsap23.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "f259867a64958b6ac3a05678e021ca371d0e91b6d5cc7695f3101da7d2032c38",
+      "path": "data/train/images/kitsap24.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "1ac06d8a4ce8b6403f0c982444899226e8b9dfbe6d31f2716bf208448bdfafe8",
+      "path": "data/train/images/kitsap25.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "e50d084664c29621b432dfe4651ba050d623cf733369a84bcaf619be3131b902",
+      "path": "data/train/images/kitsap26.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "3f9f8b1baef7a1b2caeb91e66e9c83dec4159de0cead4cfa16d1675b71f91acb",
+      "path": "data/train/images/kitsap27.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "608a478a4781a2440329619dab3a0c43f9dac9a318cb40e851306d8f9039bd9c",
+      "path": "data/train/images/kitsap28.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "1859b1bad5389d82805b51e2f97573224958da00e49d6d020ae508c07a1cce11",
+      "path": "data/train/images/kitsap29.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "76278278c9d91e7b244bb9c32f68d2dbd04de36372acd8c8264e292d34154b25",
+      "path": "data/train/images/kitsap3.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "7a6abd4ea5941c27339441168c7bdf925aac23b868e01bcde4bc8fb498c8c070",
+      "path": "data/train/images/kitsap30.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "458a62ab4e8f2f3ff248c3284c7e126a8c477257b60fd46a5995fb1eaf75ee0a",
+      "path": "data/train/images/kitsap31.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "cd468f30a07c34b18ef648e3420610adef8936edf5eb50062179d5e773be8bf7",
+      "path": "data/train/images/kitsap32.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "0b2d1989bcc6bfc68f6569bc76ffdcf3ccea9d4416eb2f8f3e51c7a043135549",
+      "path": "data/train/images/kitsap33.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "28763755b74cee252c306e1c9773cec927615e337c6dc755b09a84a2ecde03e6",
+      "path": "data/train/images/kitsap34.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "467bce33c003cc12e694afb66833db7f51a102f2390f9dbd024e575c0a37215f",
+      "path": "data/train/images/kitsap35.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "49bb2abc55b104e78f9f895ff16270450c13419e4a3f3fc05bdb319b63fcf999",
+      "path": "data/train/images/kitsap36.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "c3bfefb86ea7ed347b2b1c63695506f6640f8d42ca3781b55941606e4925e853",
+      "path": "data/train/images/kitsap4.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "6951784f24e181a934396ce50d3d9f8b508752be414a92a32afec7705205ed1e",
+      "path": "data/train/images/kitsap5.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "82fd8544139f2177e6a617a6c75dbff290eaa10d321247c4d3e516b2c768d6eb",
+      "path": "data/train/images/kitsap6.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "e37c76d37d1301f6b649580cb26dfa5ce21db4c200afcfe128a9ebde527bc0b8",
+      "path": "data/train/images/kitsap7.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "01c52a991d1905555a2ae70a0e8911684d40ced2d13f9ae1e0667e836a2508eb",
+      "path": "data/train/images/kitsap8.tif",
+      "size_bytes": 75040370
+    },
+    {
+      "lfs_sha256": "a9535641025437dbd0f8b2ce1cb99bc480cbf1647a4d589fd61582f9eb9be33d",
+      "path": "data/train/images/kitsap9.tif",
+      "size_bytes": 75040353
+    },
+    {
+      "lfs_sha256": "c37852951f9967c044d88dcb17482e36b0b34a69bedc420b6584cba7444e3aef",
+      "path": "data/train/images/tyrol-w1.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "95c28330ab753853b73cb0cc87cc67a196ff32a38bad0d29324df967567c928b",
+      "path": "data/train/images/tyrol-w10.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "70f883086a1ea29dd0afce3c466f94e6c3f472f69188ce7539eda6b2bd126651",
+      "path": "data/train/images/tyrol-w11.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "cd7900c597726b339b03e5aed328744fae1df63334529567d7faa4fb539f7821",
+      "path": "data/train/images/tyrol-w12.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "0364e6fe50274ab4b54419a6134654a559cfe044fa3d63f041fbbd51d9498d3c",
+      "path": "data/train/images/tyrol-w13.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "58544d3cbd400dad28d9074335a9ec0fade7dcbb56b00182f2fbfd4b50732f09",
+      "path": "data/train/images/tyrol-w14.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "24b07ed83f5617cb3486890290af0ede4142715f4b1f269cc0d4307d887836a3",
+      "path": "data/train/images/tyrol-w15.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "318826da423a99dc28f7976533d0408bf2947bbbaa0d85ec15a9b5032c329a61",
+      "path": "data/train/images/tyrol-w16.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "84d28aca3015723e055cf799b1442fa43ec23827d675b0b7ad658041b4a95b09",
+      "path": "data/train/images/tyrol-w17.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "fa50fbba9fca714bf86035a7e9e57a004f0bbd3870eb678838c7ce2064d1ef5c",
+      "path": "data/train/images/tyrol-w18.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "5870c0635eb7468df8f2ccc7b3506cc5ac6e1989a701f158e05d58b033faa764",
+      "path": "data/train/images/tyrol-w19.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "20dadf9273f21998ee869665d9670518814abc62b96652d85fddfd99c213c8df",
+      "path": "data/train/images/tyrol-w2.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "61838d1ce406cee820ed3ba0c2fd4f2d02cf2b87503fa9399920dbf896c42e33",
+      "path": "data/train/images/tyrol-w20.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "026c9606aba22338ce60e764a12489d119991c333498ee9cc044a928cf54f431",
+      "path": "data/train/images/tyrol-w21.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "2108d7336fdd0c15b35093c3534e794db462fb1591838f10486342b3b3e7c80e",
+      "path": "data/train/images/tyrol-w22.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "1a97cf815cf05689d38a67adea8a4201e02417338d1192abcc9428744977e531",
+      "path": "data/train/images/tyrol-w23.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "d40dee83004512b6681b70b8190677c83238ef535bf86954f003ae1ba664a527",
+      "path": "data/train/images/tyrol-w24.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "628f984b5783f3f442ddeb6579c1c4dd3817abcb05ae4749fa6dcee28c7d689b",
+      "path": "data/train/images/tyrol-w25.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "69a530aa6b2a6157fc6424cf247e7fbf2c041f99774f53fa3e6ac9030749584d",
+      "path": "data/train/images/tyrol-w26.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "174ec633a6e58edd84429104e64738a0537eeeda77097dd686e3e01b22029823",
+      "path": "data/train/images/tyrol-w27.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "163884b2c3129b4fe025059016b20c0417c57c57ca4f9d27e3c55a4f255f7f17",
+      "path": "data/train/images/tyrol-w28.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "3d4d13a7a8814beac0ccef9543e656e2d281c74a7e04ae87e166f093f11a15cc",
+      "path": "data/train/images/tyrol-w29.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "8535f1f1f9e93fe82d48d69934a4626ad1c634190c74d60f4f94692db69d453a",
+      "path": "data/train/images/tyrol-w3.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "7dd3f6e365948312b07b9478332be40712a242074f1633342dca20108d1b070c",
+      "path": "data/train/images/tyrol-w30.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "783e049b2a1295d74e04ce364fe703c9b8e621dde45a068737e18688e6359290",
+      "path": "data/train/images/tyrol-w31.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "bbcc6675c8e47a1884b90d83881684b416284cbc6ccf6b130af5b26ca7e61d3c",
+      "path": "data/train/images/tyrol-w32.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "df7e418db09c6e322200570d22493764aa5087e6d0b9b4cc413e87cc000cb9b5",
+      "path": "data/train/images/tyrol-w33.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "193dbc0aa12a973ee39e979116be51ec97586d5c5d14df0417c9127bd6570baa",
+      "path": "data/train/images/tyrol-w34.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "5e12bbcc3094865966227f649daea26fff4ea78c61e590645954565d33ee26cc",
+      "path": "data/train/images/tyrol-w35.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "edb23cb62b4b0cbc472ac8198d826be615306054a43b503a3c27138de2f9b180",
+      "path": "data/train/images/tyrol-w36.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "c0f868914315d3fcf2e1c279c27b3d3a0fc53681dfb0276a631d73aeccba1478",
+      "path": "data/train/images/tyrol-w4.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "ffd2b42737e232dde22207731de83985984addacb933e5ab46300be86d0d0d1b",
+      "path": "data/train/images/tyrol-w5.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "b922b4a938396f45cf635b285e47253fa7e42b603de591627c083a5612cc3f52",
+      "path": "data/train/images/tyrol-w6.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "8e3f753414bc9b5ee884c538c10fddc03443874489f8665205462a7bc0b95e39",
+      "path": "data/train/images/tyrol-w7.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "ed5360f598aaf40f381d049e875d58ec619a80153472099c084a4ba1e349b7e3",
+      "path": "data/train/images/tyrol-w8.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "676a7baa16b410c30b74a502c6e6dc7c1194bd7e38413899fb98387e58894c89",
+      "path": "data/train/images/tyrol-w9.tif",
+      "size_bytes": 75040445
+    },
+    {
+      "lfs_sha256": "c91663edd7abfaa3d1f198a9903ce28b5d8c99f80028fc24bd883e285b62319a",
+      "path": "data/train/images/vienna1.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "1f25e1d343bb6799d15ba16cec114916144c825542795e508a4f248e84f066cc",
+      "path": "data/train/images/vienna10.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "3493dd872f5b5cdf833e869b25efb167e6861f44439e29f2e13023f73de13748",
+      "path": "data/train/images/vienna11.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "6f9f9b4140983d9a803d46a0eed9c3d87df2128141e2d9a521b731dc14a6bac0",
+      "path": "data/train/images/vienna12.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "3d9bfdd24b984290451b450c9176b98d809422e3a4b7a2fbda5d5149b9cf339a",
+      "path": "data/train/images/vienna13.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "8b441a594643869df288c0aa28d0558f5c79f92737c328b3166da296257f4a2e",
+      "path": "data/train/images/vienna14.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "04cd0542ccce575541265da25170ae3a7a480850f66049939d88383aa7c8e0e1",
+      "path": "data/train/images/vienna15.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "e1a935647fb26d8796b9ae0ca0dda559cc6a05f49bd4e111d487b22797ab121d",
+      "path": "data/train/images/vienna16.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "ca3b5eb7a0099a5afcc11d9f5269acd6287e7981b900a542a9d63536a82eb464",
+      "path": "data/train/images/vienna17.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "5bdd4fba8ce5f4ccf61689dd2664c29f40ee594c81dbc8f6246e8fe8f6124d5f",
+      "path": "data/train/images/vienna18.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "1e2907e749bf063c8cd54ceafdaee377a9d146d6bdd059806b09f93eb0a39a06",
+      "path": "data/train/images/vienna19.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "6ae81e36c90426687f61f156dcf146868e5447554f4a065e1c8ef7bb72cd25b3",
+      "path": "data/train/images/vienna2.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "085448df0fc9693c7042620c6e0e07bbc6a56edc14623be3ae3256abf50d80c7",
+      "path": "data/train/images/vienna20.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "ae06d67a0f5a82d9bd42d4124dadba7ef2aa3be3709bb9cbe241424fc67302a0",
+      "path": "data/train/images/vienna21.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "5c1bf4fbfc06dc4d1a932786a2cd60517855274539ddcc8210c8d568509ed828",
+      "path": "data/train/images/vienna22.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "fd8b8ab42b59d29fff28f076ad7c0e37731ce365b144dae8f61d5f46d159c674",
+      "path": "data/train/images/vienna23.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "aac9921f7bd1237b41763250aa861e351ab055b7e3b431a2887246c7b3742875",
+      "path": "data/train/images/vienna24.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "4e255bf42cd1d549e6af88ea1e42cab6e495da9921d25172adcbbd60aebb8b06",
+      "path": "data/train/images/vienna25.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "150be66c968282d6e6c2cc1894b41a87bf07db4da26e1c66b15d6f2e81b0d8c9",
+      "path": "data/train/images/vienna26.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "99e82a18f9f06e73335b016e97520629c6a16c18b6c63252e4aa3a708f399085",
+      "path": "data/train/images/vienna27.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "5ac359460a7f8e8d087dbf59d48fc927b1dcb6f11502bb04f956faa37334eaa6",
+      "path": "data/train/images/vienna28.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "c64ebd2691016b1cef5c9031a8001c042bf130c42275d30b9bc2abd42514b894",
+      "path": "data/train/images/vienna29.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "b9b98e6aee76794aeaece26af1ab1e502b6ebabaaec48de932fb185ee5e88b63",
+      "path": "data/train/images/vienna3.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "57676fcb61a8de9605ae63f5d597fd324dc5ea5a4aef7da01538989954a93dd7",
+      "path": "data/train/images/vienna30.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "e2f3cbd56bd76af996d7499f94a7bd437af395b90db7821edd3cfcd7e81c85e4",
+      "path": "data/train/images/vienna31.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "a5a69d21e36a5103dc46e320945dae35999617efba686c1c5317b5b85f3b5fc4",
+      "path": "data/train/images/vienna32.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "4a07a1eb359270f31a6a81b179e008b25d4cccfa9ee847beafd7bd2893a94a64",
+      "path": "data/train/images/vienna33.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "7342f5b0df8d2b0c12b03ca8f7b9190757ad66f5cbcf41f35ecda809c5428579",
+      "path": "data/train/images/vienna34.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "c255633110ab524d77f657b3b3f765cf1d2ec08a8776fd8097bdb648dd58368c",
+      "path": "data/train/images/vienna35.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "5d8f08fce1c69cf20147da843a2204dae961ed49bbcc66cceb56eaf8eba68787",
+      "path": "data/train/images/vienna36.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "6e4186f7f1372957cf7a6c5b12d4d7d924f551d1a000de17348064bb4d30b7b2",
+      "path": "data/train/images/vienna4.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "5e00580a332ad1d7d9b0affe3e1778f4967bbde6ca2c25674f244beade047725",
+      "path": "data/train/images/vienna5.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "b67d3bf5ef246656590c2451ad271cf087b134ada5de95cfd763290de2c0e99b",
+      "path": "data/train/images/vienna6.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "b9b9f65a0803115cac93503d45d5c2f29e2c9bf5ced3837e08e383ea24b82567",
+      "path": "data/train/images/vienna7.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "ff42df2588161da42a4440be8622603335dac866cd78305005de9e66b3168f5f",
+      "path": "data/train/images/vienna8.tif",
+      "size_bytes": 75080895
+    },
+    {
+      "lfs_sha256": "8918962acfd054adc656a0839be57597df4fc6b7d6a864b744340b2a0bae27c7",
+      "path": "data/train/images/vienna9.tif",
+      "size_bytes": 75080895
+    }
+  ],
+  "repo_id": "blanchon/INRIA-Aerial-Image-Labeling",
+  "revision": "ad8315c82c8a3021b93a7d52922d19ea76201f60"
+}

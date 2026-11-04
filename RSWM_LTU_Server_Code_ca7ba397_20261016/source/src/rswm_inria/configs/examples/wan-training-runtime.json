@@ -1,0 +1,1 @@
+{"schema":"rswm-legacy-wan-backend-v1","mode":"base","config_key":"i2v-A14B","sampling":{"prompt":null,"negative_prompt":"","steps":null,"shift":null,"guide_scale":null,"boundary":null,"param_dtype":"bf16","t5_dtype":"bf16","t5_cpu":null,"inactive_model_cpu":false},"lora_subdir":null,"training":null}

@@ -1,0 +1,155 @@
+{
+  "schema": "rsroll.iclr_main_a800_plan/v1",
+  "release": "rsroll-bench-iclr-20260816-iclr-main-a800",
+  "status": "CONFIGURED_NOT_RUN",
+  "safety": {
+    "default_mode": "plan",
+    "formal_confirmation_env": "RSWM_CONFIRM_FORMAL_RUN",
+    "formal_confirmation_value": "YES",
+    "baseline_confirmation_env": "RSWM_CONFIRM_BASELINE_RUN",
+    "baseline_confirmation_value": "YES",
+    "evaluation_confirmation_env": "RSWM_CONFIRM_EVALUATION_RUN",
+    "evaluation_confirmation_value": "YES"
+  },
+  "protocol": {
+    "train_dataset": "aid",
+    "test_datasets": ["aid", "whurs19", "resisc45"],
+    "condition_frames": 1,
+    "score_frames": "1...T-1",
+    "frame_counts": [17, 25, 33],
+    "headline_eval_n": 400,
+    "training_seeds": [42, 43, 44],
+    "split_seed": 42,
+    "generation_seed": 42,
+    "precision": "bf16",
+    "gpu_profile": "a800_80g",
+    "overlap_definition": "condition-frame overlap profile; endpoint overlap is reported separately",
+    "geometry_claim": "viewpoint-conditioned 2D consistency proxy; not explicit 3D geometry"
+  },
+  "benchmark_manifests": {
+    "aid": {
+      "path": "${RSWM_BASE}/work/rsroll_official/manifests/aid_test.json",
+      "role": "in_domain_test",
+      "train_allowed": true
+    },
+    "whurs19": {
+      "path": "${RSWM_BASE}/work/rsroll_official/manifests/whurs19_test.json",
+      "role": "cross_dataset_test_only",
+      "train_allowed": false
+    },
+    "resisc45": {
+      "path": "${RSWM_BASE}/work/rsroll_official/manifests/resisc45_test.json",
+      "role": "cross_dataset_test_only",
+      "train_allowed": false
+    }
+  },
+  "runs": {
+    "iclr_primary_native_attn_cam_r16_s42": {
+      "config": "configs/iclr_main/primary_native_attn_cam_r16_s42.yaml",
+      "family": "primary_multiseed",
+      "role": "native", "pose_mode": "native", "target_modules": "attn_cam", "rank": 16, "train_seed": 42
+    },
+    "iclr_primary_native_attn_cam_r16_s43": {
+      "config": "configs/iclr_main/primary_native_attn_cam_r16_s43.yaml",
+      "family": "primary_multiseed",
+      "role": "native", "pose_mode": "native", "target_modules": "attn_cam", "rank": 16, "train_seed": 43
+    },
+    "iclr_primary_native_attn_cam_r16_s44": {
+      "config": "configs/iclr_main/primary_native_attn_cam_r16_s44.yaml",
+      "family": "primary_multiseed",
+      "role": "native", "pose_mode": "native", "target_modules": "attn_cam", "rank": 16, "train_seed": 44
+    },
+    "iclr_matched_native_attn_only_r16_s42": {
+      "config": "configs/iclr_main/matched_native_attn_only_r16_s42.yaml",
+      "family": "matched_pose_target",
+      "role": "native", "pose_mode": "native", "target_modules": "attn_only", "rank": 16, "train_seed": 42
+    },
+    "iclr_matched_drop_attn_only_r16_s42": {
+      "config": "configs/iclr_main/matched_drop_attn_only_r16_s42.yaml",
+      "family": "matched_pose_target",
+      "role": "drop", "pose_mode": "drop", "target_modules": "attn_only", "rank": 16, "train_seed": 42
+    },
+    "iclr_matched_drop_attn_cam_r16_s42": {
+      "config": "configs/iclr_main/matched_drop_attn_cam_r16_s42.yaml",
+      "family": "matched_pose_target",
+      "role": "drop", "pose_mode": "drop", "target_modules": "attn_cam", "rank": 16, "train_seed": 42
+    },
+    "iclr_target_native_all_r16_s42": {
+      "config": "configs/iclr_main/target_native_all_r16_s42.yaml",
+      "family": "target_all_optional",
+      "role": "native", "pose_mode": "native", "target_modules": "all", "rank": 16, "train_seed": 42
+    },
+    "iclr_target_drop_all_r16_s42": {
+      "config": "configs/iclr_main/target_drop_all_r16_s42.yaml",
+      "family": "target_all_optional",
+      "role": "drop", "pose_mode": "drop", "target_modules": "all", "rank": 16, "train_seed": 42
+    },
+    "iclr_rank_native_attn_cam_r4_s42": {
+      "config": "configs/iclr_main/rank_native_attn_cam_r4_s42.yaml",
+      "family": "rank_sweep",
+      "role": "native", "pose_mode": "native", "target_modules": "attn_cam", "rank": 4, "train_seed": 42
+    },
+    "iclr_rank_native_attn_cam_r8_s42": {
+      "config": "configs/iclr_main/rank_native_attn_cam_r8_s42.yaml",
+      "family": "rank_sweep",
+      "role": "native", "pose_mode": "native", "target_modules": "attn_cam", "rank": 8, "train_seed": 42
+    },
+    "iclr_rank_native_attn_cam_r32_s42": {
+      "config": "configs/iclr_main/rank_native_attn_cam_r32_s42.yaml",
+      "family": "rank_sweep",
+      "role": "native", "pose_mode": "native", "target_modules": "attn_cam", "rank": 32, "train_seed": 42
+    },
+    "iclr_rank_native_attn_cam_r64_s42": {
+      "config": "configs/iclr_main/rank_native_attn_cam_r64_s42.yaml",
+      "family": "rank_sweep",
+      "role": "native", "pose_mode": "native", "target_modules": "attn_cam", "rank": 64, "train_seed": 42
+    }
+  },
+  "groups": {
+    "primary": [
+      "iclr_primary_native_attn_cam_r16_s42",
+      "iclr_primary_native_attn_cam_r16_s43",
+      "iclr_primary_native_attn_cam_r16_s44"
+    ],
+    "matched": [
+      "iclr_primary_native_attn_cam_r16_s42",
+      "iclr_matched_native_attn_only_r16_s42",
+      "iclr_matched_drop_attn_only_r16_s42",
+      "iclr_matched_drop_attn_cam_r16_s42"
+    ],
+    "target_all": [
+      "iclr_target_native_all_r16_s42",
+      "iclr_target_drop_all_r16_s42"
+    ],
+    "rank": [
+      "iclr_rank_native_attn_cam_r4_s42",
+      "iclr_rank_native_attn_cam_r8_s42",
+      "iclr_primary_native_attn_cam_r16_s42",
+      "iclr_rank_native_attn_cam_r32_s42",
+      "iclr_rank_native_attn_cam_r64_s42"
+    ]
+  },
+  "baselines": {
+    "persistence": {"method": "persistence", "group": "lower_bound", "config_run": null, "required_env": null, "adapter_env": null, "requires_generation_gpu": false},
+    "frozen_i2v": {"method": "frozen_i2v", "group": "main", "config_run": null, "required_env": "RSWM_FROZEN_I2V_EVAL_DIR", "adapter_env": "RSWM_FROZEN_I2V_EVAL_DIR", "requires_generation_gpu": false},
+    "image_outpainting": {"method": "image_outpainting", "group": "main", "config_run": null, "required_env": "RSWM_INPAINT_MODEL", "adapter_env": "RSWM_INPAINT_MODEL", "requires_generation_gpu": true},
+    "rswise_recursive_bridge": {"method": "rswise_recursive_bridge", "group": "main", "config_run": null, "required_env": "RSWM_RSWISE_EVAL_DIR", "adapter_env": "RSWM_RSWISE_EVAL_DIR", "requires_generation_gpu": false},
+    "video_no_camera": {"method": "video_no_camera", "group": "main", "config_run": "iclr_matched_drop_attn_cam_r16_s42", "required_env": "RSWM_NO_CAMERA_EVAL_DIR", "adapter_env": "RSWM_NO_CAMERA_EVAL_DIR", "requires_generation_gpu": false},
+    "rsroll_primary_s42": {"method": "rsroll_native_attn_cam_r16", "group": "main", "config_run": "iclr_primary_native_attn_cam_r16_s42", "required_env": "RSWM_NATIVE_ATTN_CAM_R16_S42_EVAL_DIR", "adapter_env": "RSWM_NATIVE_ATTN_CAM_R16_EVAL_DIR", "requires_generation_gpu": false},
+    "rsroll_primary_s43": {"method": "rsroll_native_attn_cam_r16", "group": "main", "config_run": "iclr_primary_native_attn_cam_r16_s43", "required_env": "RSWM_NATIVE_ATTN_CAM_R16_S43_EVAL_DIR", "adapter_env": "RSWM_NATIVE_ATTN_CAM_R16_EVAL_DIR", "requires_generation_gpu": false},
+    "rsroll_primary_s44": {"method": "rsroll_native_attn_cam_r16", "group": "main", "config_run": "iclr_primary_native_attn_cam_r16_s44", "required_env": "RSWM_NATIVE_ATTN_CAM_R16_S44_EVAL_DIR", "adapter_env": "RSWM_NATIVE_ATTN_CAM_R16_EVAL_DIR", "requires_generation_gpu": false}
+  },
+  "baseline_groups": {
+    "lower_bound": ["persistence"],
+    "primary": ["rsroll_primary_s42", "rsroll_primary_s43", "rsroll_primary_s44"],
+    "main": ["persistence", "frozen_i2v", "image_outpainting", "rswise_recursive_bridge", "video_no_camera", "rsroll_primary_s42", "rsroll_primary_s43", "rsroll_primary_s44"]
+  },
+  "evaluation": {
+    "core_metrics": ["SSIM", "PSNR"],
+    "paper_metrics": ["LPIPS", "FID", "FVD_R3D_PROXY", "FVD_I3D"],
+    "distribution_metric_min_n": 32,
+    "i3d_checkpoint_env": "RSWM_I3D_CHECKPOINT",
+    "result_root": "${RSWM_BASE}/work/rsroll_iclr_baselines",
+    "paper_table_root": "${RSWM_BASE}/work/rsroll_iclr_paper_results"
+  }
+}

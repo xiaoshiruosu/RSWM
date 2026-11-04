@@ -1,0 +1,12 @@
+# Direct stack verified on the 4×NVIDIA A800-SXM4-80GB server.
+# Use as a constraints file (-c), not as permission to upgrade a working env.
+torch==2.4.0
+torchvision==0.19.0
+flash-attn==2.7.3
+transformers==4.51.3
+tokenizers==0.21.4
+diffusers==0.39.0
+accelerate==1.14.0
+peft==0.19.1
+numpy==1.26.4
+huggingface-hub==0.36.2
